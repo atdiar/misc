@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Custom Scrollbar with Wider Hover Area</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            line-height: 1.6;
+            color: #fff;
+            padding: 20px;
+            background-color: #1a1a1a;
+            height: 3000px; /* Ensure scrolling */
+            margin-right: 40px; /* Space for custom scrollbar */
+        }
+
+        h1 {
+            text-align: center;
+        }
+
+        #scrollbar-container {
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            width: 40px; /* Increased width for larger hover area */
+            height: calc(100% - 40px);
+            background-color: transparent;
+        }
+
+        #scrollbar-track {
+            position: absolute;
+            right: 19px; /* Centered in the wider container */
+            top: 0;
+            bottom: 0;
+            width: 1px;
+            background-color: rgba(255, 255, 255, 0.3);
+            transition: background-color 0.3s ease;
+        }
+
+        #scrollbar-thumb {
+            position: absolute;
+            right: 10px; /* Centered in the wider container */
+            width: 20px;
+            height: 20px; /* Fixed size */
+            background-color: rgba(255, 255, 255, 0.7);
+            border-radius: 50%; /* Circular thumb */
+            transition: background-color 0.3s ease;
+        }
+
+        #scrollbar-container:hover #scrollbar-track,
+        #scrollbar-container:hover #scrollbar-thumb {
+            background-color: rgba(255, 255, 255, 1); /* Full opacity on hover */
+        }
+
+        body.scrolling {
+            cursor: none;
+        }
+
+        /* Hide default scrollbar */
+        ::-webkit-scrollbar {
+            display: none;
+        }
+        
+        * {
+            scrollbar-width: none;
+            -ms-overflow-style: none;
+        }
+    </style>
+</head>
+<body>
+    <h1>Custom Scrollbar with Wider Hover Area</h1>
+    <p>This page demonstrates a custom scrollbar with a wider hover area and full opacity on hover.</p>
+    <div id="content"></div>
+
+    <div id="scrollbar-container">
+        <div id="scrollbar-track"></div>
+        <div id="scrollbar-thumb"></div>
+    </div>
+
+    <script>
+        // Generate content
+        const content = document.getElementById('content');
+        for (let i = 0; i < 50; i++) {
+            const p = document.createElement('p');
+            p.textContent = `This is paragraph ${i + 1}. It's here to provide enough content for scrolling.`;
+            content.appendChild(p);
+        }
+
+        const scrollbarContainer = document.getElementById('scrollbar-container');
+        const scrollbarThumb = document.getElementById('scrollbar-thumb');
+        const scrollbarTrack = document.getElementById('scrollbar-track');
+        let isDragging = false;
+        let startY;
+
+        function updateScrollbarPosition() {
+            const scrollPercentage = window.scrollY / (document.documentElement.scrollHeight - window.innerHeight);
+            const trackHeight = scrollbarTrack.offsetHeight;
+            const thumbHeight = scrollbarThumb.offsetHeight;
+            const maxTop = trackHeight - thumbHeight;
+            const thumbPosition = scrollPercentage * maxTop;
+            scrollbarThumb.style.top = `${thumbPosition}px`;
+        }
+
+        function scrollToPosition(y) {
+            const trackHeight = scrollbarTrack.offsetHeight;
+            const thumbHeight = scrollbarThumb.offsetHeight;
+            const maxTop = trackHeight - thumbHeight;
+            const boundedY = Math.max(0, Math.min(y, maxTop));
+            const scrollPercentage = boundedY / maxTop;
+            const scrollTarget = scrollPercentage * (document.documentElement.scrollHeight - window.innerHeight);
+            window.scrollTo(0, scrollTarget);
+            updateScrollbarPosition();
+        }
+
+        scrollbarContainer.addEventListener('mousedown', (e) => {
+            e.preventDefault();
+            isDragging = true;
+            document.body.classList.add('scrolling');
+            const thumbRect = scrollbarThumb.getBoundingClientRect();
+            if (e.clientY >= thumbRect.top && e.clientY <= thumbRect.bottom) {
+                startY = e.clientY - thumbRect.top;
+            } else {
+                startY = scrollbarThumb.offsetHeight / 2;
+                const y = e.clientY - scrollbarContainer.getBoundingClientRect().top - startY;
+                scrollToPosition(y);
+            }
+        });
+
+        document.addEventListener('mousemove', (e) => {
+            if (!isDragging) return;
+            e.preventDefault();
+            const y = e.clientY - scrollbarContainer.getBoundingClientRect().top - startY;
+            scrollToPosition(y);
+        });
+
+        document.addEventListener('mouseup', () => {
+            isDragging = false;
+            document.body.classList.remove('scrolling');
+        });
+
+        window.addEventListener('scroll', updateScrollbarPosition);
+        window.addEventListener('resize', updateScrollbarPosition);
+
+        // Initial setup
+        updateScrollbarPosition();
+    </script>
+</body>
+</html>

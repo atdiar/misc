@@ -1,0 +1,4105 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>UI Kit Editor</title>
+    <style>
+        /* Existing styles remain here */
+
+        /* CSS Reset Rules */
+        .css-reset {
+
+            /* 1. Use a more-intuitive box-sizing model. */
+            *,
+            *::before,
+            *::after {
+                box-sizing: border-box;
+            }
+
+            /* 2. Remove default margin */
+            * {
+                margin: 0;
+            }
+
+            /* 3. Add accessible line-height, 4. Improve text rendering */
+            body {
+                line-height: 1.5;
+                -webkit-font-smoothing: antialiased;
+            }
+
+            /* 5. Improve media defaults */
+            img,
+            picture,
+            video,
+            canvas,
+            svg {
+                display: block;
+                max-width: 100%;
+            }
+
+            /* 6. Remove built-in form typography styles */
+            input,
+            button,
+            textarea,
+            select {
+                font: inherit;
+            }
+
+            /* 7. Avoid text overflows */
+            p,
+            h1,
+            h2,
+            h3,
+            h4,
+            h5,
+            h6 {
+                overflow-wrap: break-word;
+            }
+
+            /* 8. Create a root stacking context */
+            #root,
+            #__next {
+                isolation: isolate;
+            }
+        }
+    </style>
+    <style>
+        body {
+            font-family: Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+        }
+
+        .editor-container {
+            display: flex;
+            margin-bottom: 20px;
+            border: 1px solid #e7e5e5;
+            padding: 10px;
+            max-width:960px;
+            margin: 0 auto;
+        }
+
+        .element-container {
+            flex: 1;
+            padding: 10px;
+        }
+
+        .css-editor {
+            display:flex;
+            flex-direction: column;
+            flex: 1;
+            margin-left: 20px;
+            max-width: 350px;;
+        }
+
+        textarea {
+            width: 100%;
+            height: 150px;
+            resize: vertical;
+        }
+
+        .background-editor {
+            margin-top: 20px;
+        }
+
+        #element-selector {
+            margin-bottom: 20px;
+            padding: 5px;
+        }
+
+        #add-element {
+            align-self: center;
+            cursor: pointer;
+            margin-bottom: 20px;
+        }
+
+        .pseudo-selector {
+            margin-top: 10px;
+        }
+
+        .css-display-area {
+            position: relative;
+            margin-top: 20px;
+            flex:1 1;
+            display:flex;
+            flex-direction: column;
+        }
+
+        .css-display-area i {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 0.8em;
+            color: #666;
+            
+        }
+
+        .css-display {
+            background-color: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 10px;
+            white-space: pre;
+            font-family: monospace;
+            flex:1 1;
+        }
+
+        .css-display:focus {
+            outline: none;
+        }
+
+        .css-display:hover {
+            cursor: pointer;
+        }
+
+        .css-textarea {
+            width: 100%;
+            height: 150px;
+            font-family: monospace;
+        }
+
+        .editable-element-container {
+            position: relative;
+            margin-top: 20px;
+        }
+
+        .editable-element-container i {
+            position: absolute;
+            top: -20px;
+            left: 0;
+            font-size: 0.8em;
+            color: #666; /* wtf Claude AI?!!! *dead* */
+        }
+
+        .editable-element-container .editable-element {
+            width: 100%;
+            overflow: hidden; /* Enable both horizontal and vertical scrolling when needed */
+            transition: max-width 0.3s ease; /* Smooth transition for width change */
+        }
+
+        .editable-element-container:has(*:hover) .editable-element {
+            max-width: 100%; /* Expand to full width on hover of any child element */
+        }
+
+        #element-selector option:disabled {
+            color: #999;
+            font-style: italic;
+        }
+
+        .editable-element{
+            overflow:hidden;
+        }
+
+        .editable-element:hover {
+            overflow: auto;
+        }
+
+        .modal {
+        display: none;
+        position: fixed;
+        z-index: 1000;
+        left: 0;
+        top: 0;
+        width: 100%;
+        height: 100%;
+        overflow: auto;
+        background-color: rgba(0,0,0,0.4);
+    }
+
+    .modal-content {
+        background-color: #fefefe;
+        margin: 15% auto;
+        padding: 20px;
+        width: 80%;
+        max-width: 800px;
+        position: relative;
+    }
+
+    .close {
+        color: #aaa;
+        position: absolute;
+        top: 10px;
+        right: 20px;
+        font-size: 28px;
+        font-weight: bold;
+        cursor: pointer;
+    }
+
+    .close:hover,
+    .close:focus {
+        color: black;
+        text-decoration: none;
+        cursor: pointer;
+    }
+
+    .go-code-pre {
+        background-color: #f4f4f4;
+        border: 1px solid #ddd;
+        border-radius: 4px;
+        padding: 15px;
+        white-space: pre;
+        word-wrap: break-word;
+        max-height: 400px;
+        overflow-y: auto;
+        tab-size: 4;
+    }
+
+    pre, code, textarea {
+        tab-size: 4;
+        -moz-tab-size: 4;
+        -o-tab-size: 4;
+    }
+
+    .view-go-code-btn {
+        align-self: start;
+        margin-top:10px;
+        word-wrap:normal;
+        white-space: nowrap;
+        word-break: keep-all;
+    }
+
+    @keyframes flash {
+        0%, 100% { opacity: 0; }
+        10%, 90% { opacity: 1; }
+        50% { opacity: 0.5; }
+    }
+
+    #save-indicator {
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 10px 20px;
+        border-radius: 5px;
+        font-weight: bold;
+        z-index: 1000;
+        transition: all 0.3s ease-in-out;
+        font-size: 16px;
+        opacity: 0;
+    }
+
+    #save-indicator.flashing {
+        top: 50%;
+        left: 50%;
+        font-size: 48px;
+        padding: 30px 50px;
+        animation: flash 2s ease-in-out;
+    }
+
+    #save-indicator.visible {
+        opacity: 1;
+    }
+
+    #copy-go-code {
+        cursor: pointer;
+        padding: 5px 10px;
+        border: none;
+        border-radius: 5px;
+        margin-top: 10px;
+        white-space:nowrap;
+    }
+        
+    </style>
+</head>
+
+<body>
+    <div id="goCodeModal" class="modal">
+        <div class="modal-content">
+            <span class="close">&times;</span>
+            <h2 id="modalTitle">Go Styling function for Zui</h2>
+            <p><i>Double-click code to select</i><p>
+            <pre id="modalGoCode" class="go-code-pre"></pre>
+        </div>
+    </div>
+    <div id="save-indicator"></div>
+    <h1>UI Kit Editor</h1>
+    <div class="global-styles">
+        <h2>Global Styles</h2>
+    
+    <div class="reset-css">
+        <label>
+            <input type="checkbox" id="reset-css-toggle" checked>
+            Reset CSS
+        </label>
+        <details>
+            <summary>View Reset CSS</summary>
+            <pre id="reset-css-display"></pre>
+        </details>
+    </div>
+
+    <div class="generated-global-styles">
+        <h3>Generated Global Styles</h3>
+        <div>
+            <label for="font-family">Font Family:</label>
+            <select id="font-family">
+                <option value="Arial, sans-serif">Arial</option>
+                <option value="Verdana, sans-serif">Verdana</option>
+                <option value="'Times New Roman', serif">Times New Roman</option>
+                <option value="'Courier New', monospace">Courier New</option>
+                <option value="Georgia, serif">Georgia</option>
+            </select>
+        </div>
+        <div>
+            <label for="font-size">Font Size:</label>
+            <input type="range" id="font-size" min="12" max="24" value="16">
+            <span id="font-size-value">16px</span>
+        </div>
+        <div>
+            <label for="text-color">Text Color:</label>
+            <input type="color" id="text-color" value="#000000">
+        </div>
+        <div>
+            <label for="line-height">Line Height:</label>
+            <input type="range" id="line-height" min="1" max="2" step="0.1" value="1.5">
+            <span id="line-height-value">1.5</span>
+        </div>
+        <div>
+            <label for="page-padding">Page Padding:</label>
+            <input type="number" id="page-padding" min="0" max="100" value="20">
+            <span>px</span>
+        </div>
+        <div>
+            <label for="page-width">Page Width:</label>
+            <input type="number" id="page-width" min="200" max="2000" value="800">
+            <span>px</span>
+        </div>
+        <div>
+            <label for="color-picker">Background Color:</label>
+            <input type="color" id="color-picker" value="#ffffff">
+        </div>
+        <details>
+            <summary>View Generated CSS</summary>
+            <pre id="generated-css-display"></pre>
+        </details>
+    </div>
+
+    <div class="user-global-css">
+        <h3>User Global CSS</h3>
+        <textarea id="user-global-css" rows="10" cols="50" placeholder="Add your custom global CSS here"></textarea>
+    </div>
+
+        <button id="new-stylesheet" style="background-color: #2f69f0; color: white;">New Stylesheet</button>
+        <!-- Other global style controls remain here -->
+    </div>
+
+    <select id="element-selector">
+        <option value="">Select an element to add</option>
+        <option value="a">a (Anchor)</option>
+        <option value="abbr">abbr (Abbreviation)</option>
+        <option value="address">address</option>
+        <option value="article">article</option>
+        <option value="aside">aside</option>
+        <option value="audio">audio</option>
+        <option value="blockquote">blockquote</option>
+        <option value="button">button</option>
+        <option value="canvas">canvas</option>
+        <option value="caption">caption</option>
+        <option value="cite">cite</option>
+        <option value="code">code</option>
+        <option value="data">data</option>
+        <option value="dd">dd (Description Details)</option>
+        <option value="del">del</option>
+        <option value="details">details</option>
+        <option value="dfn">dfn</option>
+        <option value="dialog">dialog</option>
+        <option value="div">div</option>
+        <option value="dl">dl (Description List)</option>
+        <option value="dt">dt (Description Term)</option>
+        <option value="em">em (Emphasis)</option>
+        <option value="fieldset">fieldset</option>
+        <option value="figcaption">figcaption</option>
+        <option value="figure">figure</option>
+        <option value="footer">footer</option>
+        <option value="form">form</option>
+        <option value="h1">h1</option>
+        <option value="h2">h2</option>
+        <option value="h3">h3</option>
+        <option value="h4">h4</option>
+        <option value="h5">h5</option>
+        <option value="h6">h6</option>
+        <option value="header">header</option>
+        <option value="hr">hr (Horizontal Rule)</option>
+        <option value="i">i (Italic)</option>
+        <option value="img">img (Image)</option>
+        <option value="input">input (Generic)</option>
+        <option value="input[type='text']">input (Text)</option>
+        <option value="input[type='password']">input (Password)</option>
+        <option value="input[type='email']">input (Email)</option>
+        <option value="input[type='number']">input (Number)</option>
+        <option value="input[type='tel']">input (Telephone)</option>
+        <option value="input[type='url']">input (URL)</option>
+        <option value="input[type='search']">input (Search)</option>
+        <option value="input[type='date']">input (Date)</option>
+        <option value="input[type='time']">input (Time)</option>
+        <option value="input[type='datetime-local']">input (Datetime-local)</option>
+        <option value="input[type='month']">input (Month)</option>
+        <option value="input[type='week']">input (Week)</option>
+        <option value="input[type='color']">input (Color)</option>
+        <option value="input[type='file']">input (File)</option>
+        <option value="input[type='range']">input (Range)</option>
+        <option value="input[type='checkbox']">input (Checkbox)</option>
+        <option value="input[type='radio']">input (Radio)</option>
+        <option value="input[type='submit']">input (Submit)</option>
+        <option value="input[type='reset']">input (Reset)</option>
+        <option value="input[type='button']">input (Button)</option>
+        <option value="ins">ins</option>
+        <option value="kbd">kbd</option>
+        <option value="label">label</option>
+        <option value="legend">legend</option>
+        <option value="li">li (List Item)</option>
+        <option value="main">main</option>
+        <option value="mark">mark</option>
+        <option value="meter">meter</option>
+        <option value="nav">nav</option>
+        <option value="ol">ol (Ordered List)</option>
+        <option value="option">option</option>
+        <option value="output">output</option>
+        <option value="p">p (Paragraph)</option>
+        <option value="pre">pre</option>
+        <option value="progress">progress</option>
+        <option value="q">q (Quote)</option>
+        <option value="s">s (Strikethrough)</option>
+        <option value="samp">samp</option>
+        <option value="section">section</option>
+        <option value="select">select</option>
+        <option value="small">small</option>
+        <option value="span">span</option>
+        <option value="strong">strong</option>
+        <option value="sub">sub</option>
+        <option value="summary">summary</option>
+        <option value="sup">sup</option>
+        <option value="table">table</option>
+        <option value="tbody">tbody</option>
+        <option value="td">td (Table Cell)</option>
+        <option value="textarea">textarea</option>
+        <option value="tfoot">tfoot</option>
+        <option value="th">th (Table Header)</option>
+        <option value="thead">thead</option>
+        <option value="time">time</option>
+        <option value="tr">tr (Table Row)</option>
+        <option value="u">u (Underline)</option>
+        <option value="ul">ul (Unordered List)</option>
+        <option value="var">var</option>
+        <option value="video">video</option>
+    </select>
+    <button id="add-element">Click to add Element</button>
+
+    <div id="elements-container"></div>
+
+    <script>
+        const cssToGoMapping = {
+            // Container Layout properties
+            "box-shadow": {
+                id: "Container.Layout.BoxShadow",
+                values: ["none"],
+            },
+            "justify-content": {
+                id: "Container.Layout.JustifyContent",
+                values: ["flex-start", "flex-end", "center", "space-between", "space-around"],
+            },
+            "z-index": {
+                id: "Container.Layout.ZIndex",
+                values: ["auto"],
+            },
+            "float": {
+                id: "Container.Layout.Float",
+                values: ["none", "left", "right"],
+            },
+            "overflow": {
+                id: "Container.Layout.Overflow",
+                values: ["visible", "hidden", "scroll", "auto"],
+            },
+            "overflow-y": {
+                id: "Container.Layout.OverflowY",
+                values: ["visible", "hidden", "scroll", "auto"],
+            },
+            "perspective": {
+                id: "Container.Layout.Perspective",
+                values: ["none"],
+            },
+            "border-collapse": {
+                id: "Container.Layout.BorderCollapse",
+                values: ["separate", "collapse"],
+            },
+            "page-break-before": {
+                id: "Container.Layout.PageBreakBefore",
+                values: ["auto", "always", "avoid", "left", "right"],
+            },
+            "columns": {
+                id: "Container.Layout.Columns",
+                values: ["auto"],
+            },
+            "column-count": {
+                id: "Container.Layout.ColumnCount",
+                values: ["auto"],
+            },
+            "min-height": {
+                id: "Container.Layout.MinHeight",
+                values: [],
+            },
+            "page-break-inside": {
+                id: "Container.Layout.PageBreakInside",
+                values: ["auto", "avoid"],
+            },
+            "column-gap": {
+                id: "Container.Layout.ColumnGap",
+                values: ["normal"],
+            },
+            "clip": {
+                id: "Container.Layout.Clip",
+                values: ["auto"],
+            },
+            "flex-direction": {
+                id: "Container.Layout.FlexDirection",
+                values: ["row", "row-reverse", "column", "column-reverse"],
+            },
+            "page-break-after": {
+                id: "Container.Layout.PageBreakAfter",
+                values: ["auto", "always", "avoid", "left", "right"],
+            },
+            "top": {
+                id: "Container.Layout.Top",
+                values: ["auto"],
+            },
+            "counter-increment": {
+                id: "Container.Layout.CounterIncrement",
+                values: ["none"],
+            },
+            "height": {
+                id: "Container.Layout.Height",
+                values: ["auto"],
+            },
+            "transform-style": {
+                id: "Container.Layout.TransformStyle",
+                values: ["flat", "preserve-3d"],
+            },
+            "overflow-x": {
+                id: "Container.Layout.OverflowX",
+                values: ["visible", "hidden", "scroll", "auto"],
+            },
+            "flex-wrap": {
+                id: "Container.Layout.FlexWrap",
+                values: ["nowrap", "wrap", "wrap-reverse"],
+            },
+            "max-width": {
+                id: "Container.Layout.MaxWidth",
+                values: ["none"],
+            },
+            "bottom": {
+                id: "Container.Layout.Bottom",
+                values: ["auto"],
+            },
+            "counter-reset": {
+                id: "Container.Layout.CounterReset",
+                values: ["none"],
+            },
+            "right": {
+                id: "Container.Layout.Right",
+                values: ["auto"],
+            },
+            "box-sizing": {
+                id: "Container.Layout.BoxSizing",
+                values: ["content-box", "border-box"],
+            },
+            "position": {
+                id: "Container.Layout.Position",
+                values: ["static", "absolute", "fixed", "relative", "sticky"],
+            },
+            "table-layout": {
+                id: "Container.Layout.TableLayout",
+                values: ["auto", "fixed"],
+            },
+            "width": {
+                id: "Container.Layout.Width",
+                values: ["auto"],
+            },
+            "max-height": {
+                id: "Container.Layout.MaxHeight",
+                values: ["none"],
+            },
+            "column-width": {
+                id: "Container.Layout.ColumnWidth",
+                values: ["auto"],
+            },
+            "min-width": {
+                id: "Container.Layout.MinWidth",
+                values: [],
+            },
+            "vertical-align": {
+                id: "Container.Layout.VerticalAlign",
+                values: ["baseline", "top", "text-top", "middle", "bottom", "text-bottom"],
+            },
+            "perspective-origin": {
+                id: "Container.Layout.PerspectiveOrigin",
+                values: [],
+            },
+            "align-content": {
+                id: "Container.Layout.AlignContent",
+                values: ["stretch", "center", "flex-start", "flex-end", "space-between", "space-around"],
+            },
+            "flex-flow": {
+                id: "Container.Layout.FlexFlow",
+                values: [],
+            },
+            "display": {
+                id: "Container.Layout.Display",
+                values: ["inline", "block", "contents", "flex", "grid", "none"],
+            },
+            "left": {
+                id: "Container.Layout.Left",
+                values: ["auto"],
+            },
+            "grid-template-columns": {
+                id: "Container.Layout.GridTemplateColumns",
+                values: [],
+            },
+            "grid-template-rows": {
+                id: "Container.Layout.GridTemplateRows",
+                values: [],
+            },
+            "grid-column": {
+                id: "Container.Layout.GridColumn",
+                values: [],
+            },
+            "grid-row": {
+                id: "Container.Layout.GridRow",
+                values: [],
+            },
+            "gap": {
+                id: "Container.Layout.Gap",
+                values: [],
+            },
+            "scroll-behavior": {
+                id: "Container.Layout.ScrollBehavior",
+                values: ["auto", "smooth"],
+            },
+
+            // Container Style properties
+            "background-image": {
+                id: "Container.Style.BackgroundImage",
+                values: ["none"],
+            },
+            "border-left-style": {
+                id: "Container.Style.BorderLeftStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "transition-delay": {
+                id: "Container.Style.TransitionDelay",
+                values: [],
+            },
+            "animation-duration": {
+                id: "Container.Style.AnimationDuration",
+                values: [],
+            },
+            "list-style": {
+                id: "Container.Style.ListStyle",
+                values: [],
+            },
+            "outline-width": {
+                id: "Container.Style.OutlineWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "border-top-left-radius": {
+                id: "Container.Style.BorderTopLeftRadius",
+                values: [],
+            },
+            "white-space": {
+                id: "Container.Style.WhiteSpace",
+                values: ["normal", "nowrap", "pre", "pre-line", "pre-wrap"],
+            },
+            "border-right": {
+                id: "Container.Style.BorderRight",
+                values: [],
+            },
+            "text-decoration-line": {
+                id: "Container.Style.TextDecorationLine",
+                values: ["none", "underline", "overline", "line-through"],
+            },
+            "animation-delay": {
+                id: "Container.Style.AnimationDelay",
+                values: [],
+            },
+            "background-position": {
+                id: "Container.Style.BackgroundPosition",
+                values: ["left top", "left center", "left bottom", "right top", "right center", "right bottom", "center top", "center center", "center bottom"],
+            },
+            "border-image": {
+                id: "Container.Style.BorderImage",
+                values: [],
+            },
+            "border-spacing": {
+                id: "Container.Style.BorderSpacing",
+                values: [],
+            },
+            "border-image-outset": {
+                id: "Container.Style.BorderImageOutset",
+                values: [],
+            },
+            "border-image-slice": {
+                id: "Container.Style.BorderImageSlice",
+                values: [],
+            },
+            "border-left-color": {
+                id: "Container.Style.BorderLeftColor",
+                values: ["transparent"],
+            },
+            "font-size": {
+                id: "Container.Style.FontSize",
+                values: ["medium", "xx-small", "x-small", "small", "large", "x-large", "xx-large", "smaller", "larger"],
+            },
+            "line-height": {
+                id: "Container.Style.LineHeight",
+                values: ["normal"],
+            },
+            "text-decoration-style": {
+                id: "Container.Style.TextDecorationStyle",
+                values: ["solid", "double", "dotted", "dashed", "wavy"],
+            },
+            "backface-visibility": {
+                id: "Container.Style.BackfaceVisibility",
+                values: ["visible", "hidden"],
+            },
+            "border-right-style": {
+                id: "Container.Style.BorderRightStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "text-decoration": {
+                id: "Container.Style.TextDecoration",
+                values: [],
+            },
+            "transition": {
+                id: "Container.Style.Transition",
+                values: [],
+            },
+            "animation-iteration-count": {
+                id: "Container.Style.AnimationIterationCount",
+                values: ["infinite"],
+            },
+            "border-bottom": {
+                id: "Container.Style.BorderBottom",
+                values: [],
+            },
+            "animation-timing-function": {
+                id: "Container.Style.AnimationTimingFunction",
+                values: [],
+            },
+            "border-radius": {
+                id: "Container.Style.BorderRadius",
+                values: [],
+            },
+            "quotes": {
+                id: "Container.Style.Quotes",
+                values: ["none", "auto"],
+            },
+            "tab-size": {
+                id: "Container.Style.TabSize",
+                values: [],
+            },
+            "animation-fill-mode": {
+                id: "Container.Style.AnimationFillMode",
+                values: ["none", "forwards", "backwards", "both"],
+            },
+            "background-size": {
+                id: "Container.Style.BackgroundSize",
+                values: ["auto", "cover", "contain"],
+            },
+            "font-size-adjust": {
+                id: "Container.Style.FontSizeAdjust",
+                values: ["none"],
+            },
+            "list-style-position": {
+                id: "Container.Style.ListStylePosition",
+                values: ["inside", "outside"],
+            },
+            "text-align": {
+                id: "Container.Style.TextAlign",
+                values: ["left", "right", "center", "justify"],
+            },
+            "text-justify": {
+                id: "Container.Style.TextJustify",
+                values: ["auto", "inter-word", "inter-character", "none"],
+            },
+            "background-attachment": {
+                id: "Container.Style.BackgroundAttachment",
+                values: ["scroll", "fixed", "local"],
+            },
+            "border-right-width": {
+                id: "Container.Style.BorderRightWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "font": {
+                id: "Container.Style.Font",
+                values: [],
+            },
+            "border-left": {
+                id: "Container.Style.BorderLeft",
+                values: [],
+            },
+            "transition-duration": {
+                id: "Container.Style.TransitionDuration",
+                values: [],
+            },
+            "word-spacing": {
+                id: "Container.Style.WordSpacing",
+                values: ["normal"],
+            },
+            "animation-name": {
+                id: "Container.Style.AnimationName",
+                values: ["none"],
+            },
+            "animation-play-state": {
+                id: "Container.Style.AnimationPlayState",
+                values: ["paused", "running"],
+            },
+            "letter-spacing": {
+                id: "Container.Style.LetterSpacing",
+                values: ["normal"],
+            },
+            "border-bottom-style": {
+                id: "Container.Style.BorderBottomStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "word-break": {
+                id: "Container.Style.WordBreak",
+                values: ["normal", "break-all", "keep-all", "break-word"],
+            },
+            "border-bottom-right-radius": {
+                id: "Container.Style.BorderBottomRightRadius",
+                values: [],
+            },
+            "font-style": {
+                id: "Container.Style.FontStyle",
+                values: ["normal", "italic", "oblique"],
+            },
+            "order": {
+                id: "Container.Style.Order",
+                values: [],
+            },
+            "outline-style": {
+                id: "Container.Style.OutlineStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "border-bottom-left-radius": {
+                id: "Container.Style.BorderBottomLeftRadius",
+                values: [],
+            },
+            "border-image-source": {
+                id: "Container.Style.BorderImageSource",
+                values: ["none"],
+            },
+            "text-align-last": {
+                id: "Container.Style.TextAlignLast",
+                values: ["auto", "left", "right", "center", "justify", "start", "end"],
+            },
+            "border-image-width": {
+                id: "Container.Style.BorderImageWidth",
+                values: ["auto"],
+            },
+            "font-weight": {
+                id: "Container.Style.FontWeight",
+                values: ["normal", "bold", "bolder", "lighter", "100", "200", "300", "400", "500", "600", "700", "800", "900"],
+            },
+            "list-style-image": {
+                id: "Container.Style.ListStyleImage",
+                values: ["none"],
+            },
+            "opacity": {
+                id: "Container.Style.Opacity",
+                values: [],
+            },
+            "clear": {
+                id: "Container.Style.Clear",
+                values: ["none", "left", "right", "both"],
+            },
+            "border-top-color": {
+                id: "Container.Style.BorderTopColor",
+                values: ["transparent"],
+            },
+            "border": {
+                id: "Container.Style.Border",
+                values: [],
+            },
+            "border-right-color": {
+                id: "Container.Style.BorderRightColor",
+                values: ["transparent"],
+            },
+            "transition-timing-function": {
+                id: "Container.Style.TransitionTimingFunction",
+                values: [],
+            },
+            "border-bottom-width": {
+                id: "Container.Style.BorderBottomWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "border-style": {
+                id: "Container.Style.BorderStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "border-top-right-radius": {
+                id: "Container.Style.BorderTopRightRadius",
+                values: [],
+            },
+            "caption-side": {
+                id: "Container.Style.CaptionSide",
+                values: ["top", "bottom"],
+            },
+            "font-family": {
+                id: "Container.Style.FontFamily",
+                values: [],
+            },
+            "text-decoration-color": {
+                id: "Container.Style.TextDecorationColor",
+                values: [],
+            },
+            "transition-property": {
+                id: "Container.Style.TransitionProperty",
+                values: ["none"],
+            },
+            "background-origin": {
+                id: "Container.Style.BackgroundOrigin",
+                values: ["padding-box", "border-box", "content-box"],
+            },
+            "text-indent": {
+                id: "Container.Style.TextIndent",
+                values: [],
+            },
+            "visibility": {
+                id: "Container.Style.Visibility",
+                values: ["visible", "hidden", "collapse"],
+            },
+            "border-color": {
+                id: "Container.Style.BorderColor",
+                values: ["transparent"],
+            },
+            "border-top": {
+                id: "Container.Style.BorderTop",
+                values: [],
+            },
+            "font-variant": {
+                id: "Container.Style.FontVariant",
+                values: ["normal", "small-caps"],
+            },
+            "outline": {
+                id: "Container.Style.Outline",
+                values: [],
+            },
+            "border-bottom-color": {
+                id: "Container.Style.BorderBottomColor",
+                values: ["transparent"],
+            },
+            "border-top-style": {
+                id: "Container.Style.BorderTopStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "border-width": {
+                id: "Container.Style.BorderWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "list-style-type": {
+                id: "Container.Style.ListStyleType",
+                values: ["disc", "armenian", "circle", "cjk-ideographic", "decimal", "decimal-leading-zero", "georgian", "hebrew", "hiragana", "hiragana-iroha", "katakana", "katakana-iroha", "lower-alpha", "lower-greek", "lower-latin", "lower-roman", "none", "square", "upper-alpha", "upper-greek", "upper-latin", "upper-roman"],
+            },
+            "outline-offset": {
+                id: "Container.Style.OutlineOffset",
+                values: [],
+            },
+            "animation": {
+                id: "Container.Style.Animation",
+                values: [],
+            },
+            "background": {
+                id: "Container.Style.Background",
+                values: [],
+            },
+            "background-repeat": {
+                id: "Container.Style.BackgroundRepeat",
+                values: ["repeat", "repeat-x", "repeat-y", "no-repeat", "space", "round"],
+            },
+            "border-top-width": {
+                id: "Container.Style.BorderTopWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "word-wrap": {
+                id: "Container.Style.WordWrap",
+                values: ["normal", "break-word"],
+            },
+            "background-color": {
+                id: "Container.Style.BackgroundColor",
+                values: ["transparent", "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure",
+                    "beige", "bisque", "black", "blanchedalmond", "blue", "blueviolet", "brown",
+                    "burlywood", "cadetblue", "chartreuse", "chocolate", "coral", "cornflowerblue",
+                    "cornsilk", "crimson", "cyan", "darkblue", "darkcyan", "darkgoldenrod",
+                    "darkgray", "darkgreen", "darkkhaki", "darkmagenta", "darkolivegreen",
+                    "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
+                    "darkslateblue", "darkslategray", "darkturquoise", "darkviolet", "deeppink",
+                    "deepskyblue", "dimgray", "dodgerblue", "firebrick", "floralwhite",
+                    "forestgreen", "fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod",
+                    "gray", "green", "greenyellow", "honeydew", "hotpink", "indianred", "indigo",
+                    "ivory", "khaki", "lavender", "lavenderblush", "lawngreen", "lemonchiffon",
+                    "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow", "lightgray",
+                    "lightgreen", "lightpink", "lightsalmon", "lightseagreen", "lightskyblue",
+                    "lightslategray", "lightsteelblue", "lightyellow", "lime", "limegreen",
+                    "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid",
+                    "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen",
+                    "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose",
+                    "moccasin", "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange",
+                    "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise",
+                    "palevioletred", "papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue",
+                    "purple", "rebeccapurple", "red", "rosybrown", "royalblue", "saddlebrown",
+                    "salmon", "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue",
+                    "slateblue", "slategray", "snow", "springgreen", "steelblue", "tan", "teal",
+                    "thistle", "tomato", "turquoise", "violet", "wheat", "white", "whitesmoke",
+                    "yellow", "yellowgreen"],
+            },
+            "text-overflow": {
+                id: "Container.Style.TextOverflow",
+                values: ["clip", "ellipsis"],
+            },
+            "text-shadow": {
+                id: "Container.Style.TextShadow",
+                values: ["none"],
+            },
+            "background-clip": {
+                id: "Container.Style.BackgroundClip",
+                values: ["border-box", "padding-box", "content-box"],
+            },
+            "border-left-width": {
+                id: "Container.Style.BorderLeftWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "resize": {
+                id: "Container.Style.Resize",
+                values: ["none", "both", "horizontal", "vertical"],
+            },
+            "animation-direction": {
+                id: "Container.Style.AnimationDirection",
+                values: ["normal", "reverse", "alternate", "alternate-reverse"],
+            },
+            "color": {
+                id: "Container.Style.Color",
+                values: ["transparent", "aliceblue", "antiquewhite", "aqua", "aquamarine", "azure",
+                    "beige", "bisque", "black", "blanchedalmond", "blue", "blueviolet", "brown",
+                    "burlywood", "cadetblue", "chartreuse", "chocolate", "coral", "cornflowerblue",
+                    "cornsilk", "crimson", "cyan", "darkblue", "darkcyan", "darkgoldenrod",
+                    "darkgray", "darkgreen", "darkkhaki", "darkmagenta", "darkolivegreen",
+                    "darkorange", "darkorchid", "darkred", "darksalmon", "darkseagreen",
+                    "darkslateblue", "darkslategray", "darkturquoise", "darkviolet", "deeppink",
+                    "deepskyblue", "dimgray", "dodgerblue", "firebrick", "floralwhite",
+                    "forestgreen", "fuchsia", "gainsboro", "ghostwhite", "gold", "goldenrod",
+                    "gray", "green", "greenyellow", "honeydew", "hotpink", "indianred", "indigo",
+                    "ivory", "khaki", "lavender", "lavenderblush", "lawngreen", "lemonchiffon",
+                    "lightblue", "lightcoral", "lightcyan", "lightgoldenrodyellow", "lightgray",
+                    "lightgreen", "lightpink", "lightsalmon", "lightseagreen", "lightskyblue",
+                    "lightslategray", "lightsteelblue", "lightyellow", "lime", "limegreen",
+                    "linen", "magenta", "maroon", "mediumaquamarine", "mediumblue", "mediumorchid",
+                    "mediumpurple", "mediumseagreen", "mediumslateblue", "mediumspringgreen",
+                    "mediumturquoise", "mediumvioletred", "midnightblue", "mintcream", "mistyrose",
+                    "moccasin", "navajowhite", "navy", "oldlace", "olive", "olivedrab", "orange",
+                    "orangered", "orchid", "palegoldenrod", "palegreen", "paleturquoise",
+                    "palevioletred", "papayawhip", "peachpuff", "peru", "pink", "plum", "powderblue",
+                    "purple", "rebeccapurple", "red", "rosybrown", "royalblue", "saddlebrown",
+                    "salmon", "sandybrown", "seagreen", "seashell", "sienna", "silver", "skyblue",
+                    "slateblue", "slategray", "snow", "springgreen", "steelblue", "tan", "teal",
+                    "thistle", "tomato", "turquoise", "violet", "wheat", "white", "whitesmoke",
+                    "yellow", "yellowgreen"],
+            },
+            "outline-color": {
+                id: "Container.Style.OutlineColor",
+                values: ["invert"],
+            },
+            "border-image-repeat": {
+                id: "Container.Style.BorderImageRepeat",
+                values: ["stretch", "repeat", "round", "space"],
+            },
+            "font-stretch": {
+                id: "Container.Style.FontStretch",
+                values: ["ultra-condensed", "extra-condensed", "condensed", "semi-condensed", "normal", "semi-expanded", "expanded", "extra-expanded", "ultra-expanded"],
+            },
+            "text-transform": {
+                id: "Container.Style.TextTransform",
+                values: ["none", "capitalize", "uppercase", "lowercase"],
+            },
+            "transform": {
+                id: "Container.Style.Transform",
+                values: [],
+            },
+            "pointer-events": {
+                id: "Container.Style.PointerEvents",
+                values: ["none", "auto"],
+            },
+            "user-select": {
+                id: "Container.Style.UserSelect",
+                values: ["none", "text", "auto", "all"],
+            },
+            "backdrop-filter": {
+                id: "Container.Style.BackdropFilter",
+                values: [],
+            },
+            "object-fit": {
+                id: "Container.Style.ObjectFit",
+                values: ["fill", "contain", "cover", "none", "scale-down"],
+            },
+            "object-position": {
+                id: "Container.Style.ObjectPosition",
+                values: [],
+            },
+
+            // Content Layout properties
+            "flex-grow": {
+                id: "Content.Layout.FlexGrow",
+                values: [],
+            },
+            "align-self": {
+                id: "Content.Layout.AlignSelf",
+                values: ["auto", "stretch", "center", "flex-start", "flex-end", "baseline"],
+            },
+            "content": {
+                id: "Content.Layout.Content",
+                values: ["normal", "none", "counter", "open-quote", "close-quote", "no-open-quote", "no-close-quote"],
+            },
+            "column-span": {
+                id: "Content.Layout.ColumnSpan",
+                values: ["none", "all"],
+            },
+            "flex": {
+                id: "Content.Layout.Flex",
+                values: ["auto", "initial", "none", "inherit"],
+            },
+            "flex-shrink": {
+                id: "Content.Layout.FlexShrink",
+                values: [],
+            },
+            "flex-basis": {
+                id: "Content.Layout.FlexBasis",
+                values: ["auto"],
+            },
+            "align-items": {
+                id: "Content.Layout.AlignItems",
+                values: ["stretch", "center", "flex-start", "flex-end", "baseline"],
+            },
+
+            // Content Style properties
+            "column-rule-width": {
+                id: "Content.Style.ColumnRuleWidth",
+                values: ["medium", "thin", "thick"],
+            },
+            "column-rule": {
+                id: "Content.Style.ColumnRule",
+                values: [],
+            },
+            "direction": {
+                id: "Content.Style.Direction",
+                values: ["ltr", "rtl"],
+            },
+            "column-rule-style": {
+                id: "Content.Style.ColumnRuleStyle",
+                values: ["none", "hidden", "dotted", "dashed", "solid", "double", "groove", "ridge", "inset", "outset"],
+            },
+            "column-rule-color": {
+                id: "Content.Style.ColumnRuleColor",
+                values: [],
+            },
+            "column-fill": {
+                id: "Content.Style.ColumnFill",
+                values: ["balance", "auto"],
+            },
+            "empty-cells": {
+                id: "Content.Style.EmptyCells",
+                values: ["show", "hide"],
+            },
+            "cursor": {
+                id: "Content.Style.Cursor",
+                values: ["alias", "all-scroll", "auto", "cell", "context-menu", "col-resize", "copy", "crosshair", "default", "e-resize", "ew-resize", "grab", "grabbing", "help", "move", "n-resize", "ne-resize", "nesw-resize", "ns-resize", "nw-resize", "nwse-resize", "no-drop", "none", "not-allowed", "pointer", "progress", "row-resize", "s-resize", "se-resize", "sw-resize", "text", "vertical-text", "w-resize", "wait", "zoom-in", "zoom-out"],
+            },
+            "padding": {
+                id: "Container.Layout.Padding",
+                values: [],
+            },
+            "padding-top": {
+                id: "Container.Layout.PaddingTop",
+                values: [],
+            },
+            "padding-right": {
+                id: "Container.Layout.PaddingRight",
+                values: [],
+            },
+            "padding-bottom": {
+                id: "Container.Layout.PaddingBottom",
+                values: [],
+            },
+            "padding-left": {
+                id: "Container.Layout.PaddingLeft",
+                values: [],
+            },
+
+            // Margin properties
+            "margin": {
+                id: "Container.Layout.Margin",
+                values: ["auto"],
+            },
+            "margin-top": {
+                id: "Container.Layout.MarginTop",
+                values: ["auto"],
+            },
+            "margin-right": {
+                id: "Container.Layout.MarginRight",
+                values: ["auto"],
+            },
+            "margin-bottom": {
+                id: "Container.Layout.MarginBottom",
+                values: ["auto"],
+            },
+            "margin-left": {
+                id: "Container.Layout.MarginLeft",
+                values: ["auto"],
+            },
+
+            // Text-related properties
+            "text-orientation": {
+                id: "Container.Style.TextOrientation",
+                values: ["mixed", "upright", "sideways"],
+            },
+            "text-underline-position": {
+                id: "Container.Style.TextUnderlinePosition",
+                values: ["auto", "under", "left", "right"],
+            },
+            "text-rendering": {
+                id: "Container.Style.TextRendering",
+                values: ["auto", "optimizeSpeed", "optimizeLegibility", "geometricPrecision"],
+            },
+            "font-kerning": {
+                id: "Container.Style.FontKerning",
+                values: ["auto", "normal", "none"],
+            },
+            "hanging-punctuation": {
+                id: "Container.Style.HangingPunctuation",
+                values: ["none", "first", "last", "force-end", "allow-end"],
+            },
+
+            // Flexbox-specific properties
+            "place-content": {
+                id: "Container.Layout.PlaceContent",
+                values: [],
+            },
+            "place-items": {
+                id: "Container.Layout.PlaceItems",
+                values: [],
+            },
+            "place-self": {
+                id: "Content.Layout.PlaceSelf",
+                values: [],
+            },
+
+            // Grid-specific properties
+            "grid-template-areas": {
+                id: "Container.Layout.GridTemplateAreas",
+                values: ["none"],
+            },
+            "grid-auto-columns": {
+                id: "Container.Layout.GridAutoColumns",
+                values: ["auto"],
+            },
+            "grid-auto-rows": {
+                id: "Container.Layout.GridAutoRows",
+                values: ["auto"],
+            },
+            "grid-auto-flow": {
+                id: "Container.Layout.GridAutoFlow",
+                values: ["row", "column", "dense", "row dense", "column dense"],
+            },
+            "grid-area": {
+                id: "Content.Layout.GridArea",
+                values: ["auto"],
+            },
+
+            // Transform-related properties
+            "transform-origin": {
+                id: "Container.Style.TransformOrigin",
+                values: [],
+            },
+            "transform-box": {
+                id: "Container.Style.TransformBox",
+                values: ["content-box", "border-box", "fill-box", "stroke-box", "view-box"],
+            },
+
+            // Miscellaneous properties
+            "aspect-ratio": {
+                id: "Container.Layout.AspectRatio",
+                values: ["auto"],
+            },
+            "scroll-snap-type": {
+                id: "Container.Layout.ScrollSnapType",
+                values: ["none", "x mandatory", "y mandatory", "block mandatory", "inline mandatory", "both mandatory"],
+            },
+            "overscroll-behavior": {
+                id: "Container.Layout.OverscrollBehavior",
+                values: ["auto", "contain", "none"],
+            },
+            "contain": {
+                id: "Container.Layout.Contain",
+                values: ["none", "strict", "content", "size", "layout", "style", "paint"],
+            },
+            "will-change": {
+                id: "Container.Style.WillChange",
+                values: ["auto"],
+            },
+            "filter": {
+                id: "Container.Style.Filter",
+                values: ["none"],
+            },
+            "mix-blend-mode": {
+                id: "Container.Style.MixBlendMode",
+                values: ["normal", "multiply", "screen", "overlay", "darken", "lighten", "color-dodge", "color-burn", "hard-light", "soft-light", "difference", "exclusion", "hue", "saturation", "color", "luminosity"],
+            },
+            "isolation": {
+                id: "Container.Style.Isolation",
+                values: ["auto", "isolate"],
+            },
+
+            // Newer CSS properties
+            "accent-color": {
+                id: "Container.Style.AccentColor",
+                values: ["auto"],
+            },
+            "content-visibility": {
+                id: "Container.Layout.ContentVisibility",
+                values: ["visible", "auto", "hidden"],
+            },
+            "scrollbar-color": {
+                id: "Container.Style.ScrollbarColor",
+                values: ["auto"],
+            },
+            "scrollbar-width": {
+                id: "Container.Style.ScrollbarWidth",
+                values: ["auto", "thin", "none"],
+            },
+
+        };
+        
+    </script>
+
+    <script>
+        function capitalizeFirstLetter(string) {
+            return string.charAt(0).toUpperCase() + string.slice(1);
+        }
+
+
+        function getMethodCall(property, value) {
+            const capitalizedProperty = property.split('-').map(capitalizeFirstLetter).join('');
+            if (value.match(/^[a-zA-Z-]+$/)) {
+                // For keyword values, use them directly
+                return `${capitalizedProperty}(${value})(e)`;
+            } else {
+                // For all other values, including colors and numeric values, use .Value()
+                return `${capitalizedProperty}.Value("${value}")(e)`;
+            }
+        }
+
+        function generateVariableName(selector) {
+            const parts = selector.split(/\s*([>+~])\s*|\s+/).filter(Boolean);
+            let name = 'RawCSS';
+            let relationship = '';
+
+            for (let i = 0; i < parts.length; i++) {
+                const part = parts[i];
+                if (part === '>') {
+                    relationship = 'DirectChild';
+                } else if (part === '+') {
+                    relationship = 'AdjacentSibling';
+                } else if (part === '~') {
+                    relationship = 'GeneralSibling';
+                } else {
+                    // It's an element or class/id selector
+                    let elementName = part.replace(/[#.:\[\]]/g, ''); // Remove special characters
+                    elementName = elementName.charAt(0).toUpperCase() + elementName.slice(1);
+                    name += elementName + relationship;
+                    relationship = 'Descendant'; // Default relationship if no operator is specified
+                }
+            }
+
+            return name;
+        }
+
+  
+        function cssToGoCode(css) {
+            const ast = parseCSS(css);
+            const beautifiedCSS = beautifyCSS(ast);
+            let goCode = '';
+            let rawCSSVariables = '';
+            let errors = [];
+            const validPseudoSelectors = ['hover', 'active', 'focus', 'visited', 'link', 'first-child', 'last-child', 'checked', 'disabled', 'enabled'];
+
+            const styleMap = new Map();
+
+            function addToStyleMap(selector, declarations) {
+                if (selector.includes('>') || selector.includes(' ') || selector.includes('+') || selector.includes('~')) {
+                    // This is a complex selector, store it as raw CSS
+                    if (!styleMap.has('rawCSS')) {
+                        styleMap.set('rawCSS', []);
+                    }
+                    styleMap.get('rawCSS').push({ selector, declarations });
+                } else {
+                    const [baseSelector, pseudoSelector] = selector.split(':');
+                    if (!styleMap.has(baseSelector)) {
+                        styleMap.set(baseSelector, { base: [], pseudo: {} });
+                    }
+                    const style = styleMap.get(baseSelector);
+                    if (pseudoSelector && validPseudoSelectors.includes(pseudoSelector)) {
+                        if (!style.pseudo[pseudoSelector]) {
+                            style.pseudo[pseudoSelector] = [];
+                        }
+                        style.pseudo[pseudoSelector].push(...declarations);
+                    } else {
+                        style.base.push(...declarations);
+                    }
+                }
+            }
+
+            ast.stylesheet.rules.forEach(rule => {
+                if (rule.type === 'rule') {
+                    rule.selectors.forEach(selector => {
+                        addToStyleMap(selector, rule.declarations);
+                    });
+                } else if (rule.type === 'keyframes' || rule.type === 'media') {
+                    // Store unsupported features in raw variables
+                    const varName = generateVariableName(rule.type === 'keyframes' ? `@keyframes ${rule.name}` : `@media ${rule.media}`);
+                    rawCSSVariables += `var ${varName} = \`${beautifyCSS(rule)}\`\n\n`;
+                }
+            });
+
+            styleMap.forEach((style, baseSelector) => {
+                if (baseSelector === 'rawCSS') {
+                    style.forEach(({ selector, declarations }) => {
+                        const varName = generateVariableName(selector);
+                        rawCSSVariables += `var ${varName} = \`\n${selector} {\n`;
+                        declarations.forEach(decl => {
+                            rawCSSVariables += `\t${decl.property}: ${decl.value};\n`;
+                        });
+                        rawCSSVariables += '}\`\n\n';
+                    });
+                } else {
+                    const elementName = baseSelector.replace(/[^\w]/g, '');
+                    const funcName = `${elementName.charAt(0).toUpperCase() + elementName.slice(1)}Style`;
+                    let functionCode = `func ${funcName}(e *ui.Element) *ui.Element {\n`;
+
+                    // Handle base styles
+                    style.base.forEach(decl => {
+                        const result = handleDeclaration(decl);
+                        if (result.goCode) {
+                            functionCode += result.goCode;
+                        }
+                    });
+
+                    // Add a line break if there are both base styles and pseudo-classes
+                    if (style.base.length > 0 && Object.keys(style.pseudo).length > 0) {
+                        functionCode += '\n';
+                    }
+
+                    // Handle pseudo-classes
+                    Object.entries(style.pseudo).forEach(([pseudo, declarations], index) => {
+                        declarations.forEach(decl => {
+                            const result = handleDeclaration(decl, pseudo);
+                            if (result.goCode) {
+                                functionCode += result.goCode;
+                            }
+                        });
+                        // Add a line break between different pseudo-classes
+                        if (index < Object.entries(style.pseudo).length - 1) {
+                            functionCode += '\n';
+                        }
+                    });
+
+                    functionCode += '\treturn e\n}\n';
+                    goCode += functionCode + '\n';
+                }
+            });
+
+            function handleDeclaration(decl, pseudoSelector = '') {
+                const property = propertyToGoMethod(decl.property);
+                const value = decl.value;
+
+                if (cssToGoMapping[decl.property]) {
+                    let methodChain = `doc.CSS.Container`;
+                    if (pseudoSelector) {
+                        methodChain += `.${capitalizeFirstLetter(pseudoSelector)}`;
+                    }
+                    methodChain += `.Style.${property}`;
+
+                    if (cssToGoMapping[decl.property].values.includes(value)) {
+                        return { goCode: `\te = ${methodChain}.${capitalizeFirstLetter(value)}(e)\n` };
+                    } else {
+                        return { goCode: `\te = ${methodChain}.Value("${value}")(e)\n` };
+                    }
+                } else {
+                    return { goCode: '' }; // This will be collected in rawCSSVariables
+                }
+            }
+
+            function generateVariableName(selector) {
+                const parts = selector.split(/\s*([>+~])\s*|\s+/).filter(Boolean);
+                let name = 'RawCSS';
+                let relationship = '';
+
+                for (let i = 0; i < parts.length; i++) {
+                    const part = parts[i];
+                    if (part === '>') {
+                        relationship = 'DirectChild';
+                    } else if (part === '+') {
+                        relationship = 'AdjacentSibling';
+                    } else if (part === '~') {
+                        relationship = 'GeneralSibling';
+                    } else {
+                        // It's an element or class/id selector
+                        let elementName = part.replace(/[#.:\[\]]/g, ''); // Remove special characters
+                        elementName = elementName.charAt(0).toUpperCase() + elementName.slice(1);
+                        name += elementName + relationship;
+                        relationship = 'Descendant'; // Default relationship if no operator is specified
+                    }
+                }
+
+                return name;
+            }
+
+            goCode = goCode.trim();
+            rawCSSVariables = rawCSSVariables.trim();
+
+            return { 
+                beautifiedCSS, 
+                goCode: goCode + '\n\n' + rawCSSVariables, 
+                errors 
+            };
+        }
+        
+    </script>
+
+    <script>
+        function updateSaveIndicator(message, isFlashing = false) {
+            const indicator = document.getElementById('save-indicator');
+            indicator.textContent = message;
+            
+            if (isFlashing) {
+                indicator.classList.add('flashing');
+                setTimeout(() => {
+                    indicator.classList.remove('flashing');
+                }, 1000); // Remove class after animation duration
+            }
+        }
+    </script>
+
+    <script>
+        document.addEventListener('DOMContentLoaded', function () {
+            let elementCount = 0;
+            let currentSheetName = sessionStorage.getItem('currentSheetName') || 'Untitled';
+            let hasUnsavedChanges = false;
+
+            function setCurrentSheetName(name) {
+                currentSheetName = name;
+                sessionStorage.setItem('currentSheetName', name);
+                updateDeleteButtonState();
+            }
+
+            // Global style controls
+            const fontFamily = document.getElementById('font-family');
+            const fontSize = document.getElementById('font-size');
+            const fontSizeValue = document.getElementById('font-size-value');
+            const textColor = document.getElementById('text-color');
+            const lineHeight = document.getElementById('line-height');
+            const lineHeightValue = document.getElementById('line-height-value');
+            const pagePadding = document.getElementById('page-padding');
+            const pagePaddingValue = document.getElementById('page-padding-value');
+            const pageWidth = document.getElementById('page-width');
+            const pageWidthValue = document.getElementById('page-width-value');
+            const globalCSS = document.getElementById('user-global-css');
+            const newStylesheetButton = document.getElementById('new-stylesheet');
+            const backgroundColorPicker = document.getElementById('color-picker');
+
+            let BackgroundColor = '#ffffff';
+            let Margin = '0 auto';
+            let TextColor = '#000000';
+            
+            function updateGlobalCSS() {
+                const resetCSSToggle = document.getElementById('reset-css-toggle');
+                const resetCSSDisplay = document.getElementById('reset-css-display');
+                const generatedCSSDisplay = document.getElementById('generated-css-display');
+                const userGlobalCSS = document.getElementById('user-global-css');
+                
+                // Update reset CSS display
+                resetCSSDisplay.textContent = resetCSSToggle.checked ? resetCSS : '';
+
+                // Generate global CSS from controls
+                const generatedCSS = `
+                    body {
+                        font-family: ${fontFamily.value};
+                        font-size: ${fontSize.value}px;
+                        color: ${textColor.value};
+                        line-height: ${lineHeight.value};
+                        padding: ${pagePadding.value}px;
+                        max-width: ${pageWidth.value}px;
+                        margin: ${Margin};
+                        background-color: ${backgroundColorPicker.value};
+                    }
+                `;
+                generatedCSSDisplay.textContent = formatGlobalCSS(generatedCSS);
+
+                // Combine all CSS
+                const combinedCSS = [
+                    resetCSSToggle.checked ? resetCSS : '',
+                    generatedCSS,
+                    userGlobalCSS.value
+                ].filter(Boolean).join('\n\n');
+
+                // Apply combined CSS
+                applyGlobalCSS(combinedCSS);
+                saveCurrentState();
+            }
+
+
+            function applyGlobalCSS(css) {
+                let styleTag = document.getElementById('global-styles');
+                if (!styleTag) {
+                    styleTag = document.createElement('style');
+                    styleTag.id = 'global-styles';
+                    document.head.appendChild(styleTag);
+                }
+                styleTag.textContent = css;
+                updateBackgroundColorPicker();
+            }
+
+            // Add event listeners to all controls and the user CSS textarea
+            document.querySelectorAll('.global-styles input, .global-styles select')
+                .forEach(el => el.addEventListener('input', updateGlobalCSS));
+
+
+            // Update display values for range inputs
+            ['font-size', 'line-height'].forEach(id => {
+                const input = document.getElementById(id);
+                const display = document.getElementById(`${id}-value`);
+                input.addEventListener('input', () => {
+                    display.textContent = id === 'font-size' ? `${input.value}px` : input.value;
+                });
+            });
+
+
+            // Add UI elements for saving, loading, and downloading stylesheets
+            const uiControls = document.createElement('div');
+            uiControls.innerHTML = `
+                <select id="load-sheet">
+                    <option value="" disabled selected>Load Sheet</option>
+                </select>
+                <button id="save-sheet">Save Sheet</button>
+                <button id="delete-sheet">Delete Sheet</button>
+                <button id="download-sheet">Download Stylesheet</button>
+                <button id="download-go-code">Download Go Code</button>
+            `;
+            document.body.insertBefore(uiControls, document.getElementById('element-selector'));
+
+
+            // Attach event listeners
+            if (backgroundColorPicker) {
+                backgroundColorPicker.addEventListener('input', (e) => {
+                    BackgroundColor = e.target.value;
+                    updateGlobalCSS();
+                    saveCurrentState();
+                });
+            }
+
+            textColor.addEventListener('input', (e) => {
+                TextColor = e.target.value;
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+            document.getElementById('reset-css-toggle').addEventListener('change', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+            fontFamily.addEventListener('change', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+            fontSize.addEventListener('input', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+                document.getElementById('font-size-value').textContent = `${document.getElementById('font-size').value}px`;
+            });
+
+            lineHeight.addEventListener('input', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+                document.getElementById('line-height-value').textContent = document.getElementById('line-height').value;
+            });
+
+            pagePadding.addEventListener('input', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+            pageWidth.addEventListener('input', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+
+            newStylesheetButton.addEventListener('click', function () {
+                if (!hasUnsavedChanges) {
+                    setCurrentSheetName('Untitled');
+                    loadDefaultState();
+                
+                    // Update UI
+                    document.title = 'Untitled - UI Kit Editor';
+                    updateLoadSheetDropdown();
+                    updateDeleteButtonState();
+                } else {
+                    if (currentSheetName !== 'Untitled') {
+                        // Unsaved changes on a saved sheet
+                        if (confirm('You have unsaved changes. Would you like to save them before creating a new stylesheet?')) {
+                            saveCurrentState(true);
+                            setCurrentSheetName('Untitled');
+                            loadDefaultState();
+                        } else if (confirm('Are you sure you want to discard your changes and create a new stylesheet?')) {
+                            setCurrentSheetName('Untitled');
+                            loadDefaultState();
+                        }
+                    } else {
+                        // Unsaved changes on an untitled sheet
+                        if (confirm('You have unsaved changes. Would you like to save them before creating a new stylesheet?')) {
+                            // Trigger the save sheet process
+                            const saveButton = document.getElementById('save-sheet');
+                            if (saveButton) {
+                                saveButton.click();
+                                // Check if the save was successful (sheetname changed from 'Untitled')
+                                if (currentSheetName !== 'Untitled') {
+                                    setCurrentSheetName('Untitled');
+                                    loadDefaultState();
+                                }
+                                // If still 'Untitled', the user cancelled the save, so we don't proceed
+                            } else {
+                                console.error('Save button not found');
+                            }
+                        } else if (confirm('Are you sure you want to discard your changes and create a new stylesheet?')) {
+                            setCurrentSheetName('Untitled');
+                            loadDefaultState();
+                        }
+                    }
+                }
+            });
+
+
+            window.addEventListener('beforeunload', (event) => {
+                pending_save = sessionStorage.getItem('pending_save');
+                if (hasUnsavedChanges) { // && sessionStorage.getItem('pending_save') === 'true') {
+                    event.preventDefault();
+                    event.returnValue = 'You have unsaved changes. Are you sure you want to discard them?';
+                }
+            });
+
+            function updateSaveIndicator(isFlashing = false) {
+                const indicator = document.getElementById('save-indicator');
+                const pendingSave = sessionStorage.getItem('pending_save');
+
+                if (!pendingSave) {
+                    indicator.classList.remove('visible');
+                    return;
+                }
+
+                indicator.classList.add('visible');
+
+                if (hasUnsavedChanges) {
+                    indicator.textContent = 'Unsaved';
+                    indicator.style.color = 'rgba(255, 0, 0, 0.8)'; // Red
+                } else {
+                    indicator.textContent = 'Saved';
+                    indicator.style.color = 'rgba(0, 128, 0, 0.8)'; // Green 
+                }
+
+                if (isFlashing) {
+                    indicator.classList.add('flashing');
+                    setTimeout(() => {
+                        indicator.classList.remove('flashing');
+                    }, 2000); // Remove class after animation duration
+                }
+            }
+
+            const resetCSS = `/* CSS Reset */
+*, *::before, *::after {
+    box-sizing: border-box;
+}
+* {
+    margin: 0;
+}
+body {
+    line-height: 1.5;
+    -webkit-font-smoothing: antialiased;
+}
+img, picture, video, canvas, svg {
+    display: block;
+    max-width: 100%;
+}
+input, button, textarea, select {
+    font: inherit;
+}
+p, h1, h2, h3, h4, h5, h6 {
+    overflow-wrap: break-word;
+}
+#root, #__next {
+    isolation: isolate;
+}
+
+`;
+
+            
+
+
+            function getStylesheetList() {
+                const list = localStorage.getItem('stylesheet_list');
+                return list ? JSON.parse(list) : [];
+            }
+
+            function addStylesheetToList(sheetName) {
+                const list = JSON.parse(localStorage.getItem('stylesheet_list') || '[]');
+                if (!list.includes(sheetName)) {
+                    list.push(sheetName);
+                    localStorage.setItem('stylesheet_list', JSON.stringify(list));
+                }
+                updateLoadSheetDropdown();
+            }
+
+            function removeStylesheetFromList(sheetName) {
+                const list = getStylesheetList();
+                const index = list.indexOf(sheetName);
+                if (index > -1) {
+                    list.splice(index, 1);
+                    localStorage.setItem('stylesheet_list', JSON.stringify(list));
+                }
+                updateLoadSheetDropdown();
+            }
+
+            function getSerializableState() {
+                const elementsContainer = document.getElementById('elements-container');
+                const elements = Array.from(elementsContainer.children).map(container => {
+                    const editableElement = container.querySelector('.editable-element');
+                    const cssTextareas = container.querySelectorAll('.css-textarea');
+                    return {
+                        type: editableElement.children[0].tagName.toLowerCase(),
+                        html: editableElement.innerHTML,
+                        styles: Array.from(cssTextareas).map(textarea => ({
+                            pseudo: textarea.dataset.pseudo,
+                            css: textarea.value
+                        }))
+                    };
+                });
+
+                return {
+                    elements: elements,
+                    globalSettings: {
+                        resetCSSEnabled: document.getElementById('reset-css-toggle').checked,
+                        fontFamily: document.getElementById('font-family').value,
+                        fontSize: document.getElementById('font-size').value,
+                        textColor: document.getElementById('text-color').value,
+                        lineHeight: document.getElementById('line-height').value,
+                        pagePadding: document.getElementById('page-padding').value,
+                        pageWidth: document.getElementById('page-width').value,
+                        backgroundColor: document.getElementById('color-picker').value,
+                        userGlobalCSS: document.getElementById('user-global-css').value
+                    }
+                };
+            }
+
+
+
+            function saveCurrentState(persist = false) {
+                const newState = getSerializableState();
+                newState.title = currentSheetName;
+                newState.currentSheetName = currentSheetName;
+
+                // Compare with the previous state
+                const previousStateJSON = sessionStorage.getItem(currentSheetName);
+                const previousState = previousStateJSON ? JSON.parse(previousStateJSON) : null;
+
+                let hasChanges = false;
+                if (!previousState || JSON.stringify(newState) !== JSON.stringify(previousState)) {
+                    hasChanges = true;
+                    // Update session storage
+                    sessionStorage.setItem(currentSheetName, JSON.stringify(newState));
+                    document.title = newState.title + " - UI Kit Editor";
+                }
+
+                if (persist && currentSheetName !== 'Untitled') {
+                    localStorage.setItem(currentSheetName, JSON.stringify(newState));
+                    sessionStorage.setItem('pending_save', 'false');
+                    hasUnsavedChanges = false;
+                } else if (hasChanges) {
+                    hasUnsavedChanges = true;
+                    let pndchg = sessionStorage.getItem('pending_save');
+                    if (pndchg) {
+                        sessionStorage.setItem('pending_save', 'true');
+                    }
+                }
+
+                if (hasChanges || persist) {
+                    updateSaveIndicator();
+                    updateLoadSheetDropdown();
+                }
+            } 
+                      
+            // Function to load a state
+            function loadState(sheetname) {
+                // Try to load from sessionStorage first, then localStorage
+                let stateJSON = sessionStorage.getItem(sheetname) || localStorage.getItem(sheetname);
+
+                if (!stateJSON) {
+                    if (sheetname === 'Untitled') {
+                        loadDefaultState();
+                        return true;
+                    }
+                    return false;
+                }
+
+                let state;
+                try {
+                    state = JSON.parse(stateJSON);
+                } catch (e) {
+                    console.error('Error parsing state JSON:', e);
+                    return false;
+                }
+
+                const elementsContainer = document.getElementById('elements-container');
+                elementsContainer.innerHTML = ''; // Clear existing elements
+
+                cleanupStyleElements(true);
+
+                // Rebuild elements from the saved state
+                if (state.elements && Array.isArray(state.elements)) {
+                    state.elements.forEach(element => {
+                        createEditorContainer(element.type, element);
+                    });
+                } else {
+                    // If no elements in the state, load default elements
+                    loadDefaultElements();
+                }
+
+                // Restore global settings
+                restoreGlobalSettings(state.globalSettings);
+
+                setCurrentSheetName(state.currentSheetName || sheetname);
+                document.title = (state.currentSheetName || sheetname) + " - UI Kit Editor";
+
+                updateGlobalCSS();
+                hasUnsavedChanges = false;
+                sessionStorage.setItem('pending_save', 'false');
+                updateSaveIndicator();
+                updateLoadSheetDropdown();
+                return true;
+            }
+
+            function loadDefaultElements() {
+                ['h1', 'h2', 'h3', 'p', 'ul', 'ol', 'a', 'button', 'form', 'blockquote', 'code', 'pre'].forEach(element => 
+                    createEditorContainer(element)
+                );
+            }
+
+            function restoreGlobalSettings(settings) {
+                if (settings) {
+                    document.getElementById('text-color').value = settings.textColor || '#000000';
+                    document.getElementById('color-picker').value = settings.backgroundColor || '#ffffff';
+                    document.getElementById('reset-css-toggle').checked = settings.resetCSSEnabled;
+                    document.getElementById('font-family').value = settings.fontFamily;
+                    document.getElementById('font-size').value = settings.fontSize;
+                    document.getElementById('line-height').value = settings.lineHeight;
+                    document.getElementById('page-padding').value = settings.pagePadding;
+                    document.getElementById('page-width').value = settings.pageWidth;
+                    document.getElementById('user-global-css').value = settings.userGlobalCSS;
+                }
+            }
+            
+            // function to delete current session state
+            // it basically get the name of the currentstylesheet from sessionstorage
+            // and then delete the item stored at this key
+            function deleteCurrentState() {
+                const sheetName = sessionStorage.getItem('currentSheetName');
+                if (sheetName) {
+                    sessionStorage.removeItem(sheetName);
+                }
+                // delete unsaved changes from buffer
+                sessionStorage.removeItem('pending_save');
+            }
+
+            function cleanupStyleElements(removeAll = false) {
+                const styleElements = document.querySelectorAll('style[data-for]');
+                
+                if (removeAll) {
+                    styleElements.forEach(style => style.remove());
+                } else {
+                    const editorContainers = document.querySelectorAll('.editor-container');
+                    styleElements.forEach(style => {
+                        const forId = style.getAttribute('data-for');
+                        if (!document.getElementById(forId)) {
+                            style.remove();
+                        }
+                    });
+                }
+            }
+
+            function loadDefaultState() {
+                const elementsContainer = document.getElementById('elements-container');
+                if (elementsContainer) {
+                    elementsContainer.innerHTML = '';
+                }
+
+                cleanupStyleElements(true); // Add this line to remove unused style elements
+
+                // Set default values for global CSS controls
+                BackgroundColor = '#ffffff';
+                backgroundColorPicker.value = '#ffffff';  
+
+                TextColor = '#000000';
+                textColor.value = '#000000';
+                
+                document.getElementById('reset-css-toggle').checked = true;
+                fontFamily.value = 'Arial, sans-serif';
+                fontSize.value = '16';
+                lineHeight.value = '1.5';
+                pagePadding.value = '20';
+                pageWidth.value = window.innerWidth - 40;
+                document.getElementById('user-global-css').value = '';
+
+                loadDefaultElements();
+                
+                updateGlobalCSS();
+                deleteCurrentState();
+                updateSaveIndicator();
+                sessionStorage.setItem('currentSheetName', currentSheetName);
+                hasUnsavedChanges = false;
+                updateLoadSheetDropdown();
+                document.title = currentSheetName + " - UI Kit Editor";
+                updateDeleteButtonState();
+            }
+
+            function updateElementIds() {
+                const elementsContainer = document.getElementById('elements-container');
+                elementsContainer.querySelectorAll('.editor-container').forEach((container, index) => {
+                    const editableElement = container.querySelector('.editable-element');
+                    if (editableElement) {
+                        const oldId = editableElement.id;
+                        const newId = `${currentSheetName}-element-${index}`;
+                        editableElement.id = newId;
+                        
+                        // Update related element IDs and data attributes
+                        container.querySelectorAll(`[id^="${oldId}"], [data-for-element="${oldId}"]`).forEach(el => {
+                            if (el.id) el.id = el.id.replace(oldId, newId);
+                            if (el.dataset.forElement) el.dataset.forElement = newId;
+                        });
+                        
+                        // Update the style tag
+                        const styleTag = document.querySelector(`style[data-for="${oldId}"]`);
+                        if (styleTag) {
+                            styleTag.setAttribute('data-for', newId);
+                        }
+                    }
+                });
+                cleanupStyleElements(); 
+            }
+
+            // Function to create stylesheet
+            function createStylesheet() {
+                let stylesheet = '';
+
+                // Add Reset CSS if enabled
+                const resetCSSToggle = document.getElementById('reset-css-toggle');
+                if (resetCSSToggle && resetCSSToggle.checked) {
+                    stylesheet += resetCSS + '\n\n';
+                }
+
+                // Add generated global styles
+                stylesheet += `body {
+                    font-family: ${fontFamily.value};
+                    font-size: ${fontSize.value}px;
+                    color: ${textColor.value};
+                    line-height: ${lineHeight.value};
+                    padding: ${pagePadding.value}px;
+                    max-width: ${pageWidth.value}px;
+                    margin: ${Margin};
+                    background-color: ${BackgroundColor};
+                }\n\n`;
+
+                // Add user-defined global CSS
+                const userGlobalCSS = document.getElementById('user-global-css');
+                if (userGlobalCSS && userGlobalCSS.value.trim()) {
+                    stylesheet += userGlobalCSS.value + '\n\n';
+                }
+
+                // Add styles for each editor container
+                document.querySelectorAll('.editor-container').forEach((editorContainer) => {
+                    const styleTag = document.querySelector(`style[data-for="${editorContainer.id}"]`);
+                    if (styleTag) {
+                        const css = styleTag.textContent.trim();
+                        try {
+                            const ast = parseCSS(css);
+                            const validRules = ast.stylesheet.rules.filter(rule => {
+                                if (rule.type === 'rule') {
+                                    return rule.declarations && rule.declarations.some(decl => 
+                                        decl.property && decl.property.trim() && decl.value && decl.value.trim()
+                                    );
+                                }
+                                return false; // Exclude non-rule types (like comments or at-rules)
+                            });
+
+                            if (validRules.length > 0) {
+                                const validCSS = validRules.map(rule => {
+                                    const selector = rule.selectors.join(', ');
+                                    const declarations = rule.declarations
+                                        .filter(decl => decl.property && decl.property.trim() && decl.value && decl.value.trim())
+                                        .map(decl => `    ${decl.property}: ${decl.value};`)
+                                        .join('\n');
+                                    return `${selector} {\n${declarations}\n}`;
+                                }).join('\n\n');
+
+                                stylesheet += validCSS + '\n\n';
+                            }
+                        } catch (error) {
+                            console.error(`Error parsing CSS for ${editorContainer.id}:`, error);
+                        }
+                    }
+                });
+
+                return formatGlobalCSS(stylesheet);
+            }
+
+
+            // Populate the load sheet dropdown
+            function updateLoadSheetDropdown() {
+                const loadSheet = document.getElementById('load-sheet');
+                if (!loadSheet) {
+                    console.error("Load sheet dropdown not found");
+                    return;
+                }
+
+                // Clear existing options
+                loadSheet.innerHTML = '';
+
+                // Add the disabled "Load Sheet" option
+                const defaultOption = document.createElement('option');
+                defaultOption.textContent = 'Load Sheet';
+                defaultOption.value = '';
+                defaultOption.disabled = true;
+                loadSheet.appendChild(defaultOption);
+
+                // Get all saved stylesheets from localStorage
+                const stylesheetList = getStylesheetList();
+
+                let selectedOptionExists = false;
+
+                stylesheetList.forEach(sheetName => {
+                    const option = document.createElement('option');
+                    option.value = sheetName;
+                    option.textContent = sheetName;
+                    if (sheetName === currentSheetName) {
+                        option.selected = true;
+                        selectedOptionExists = true;
+                    }
+                    loadSheet.appendChild(option);
+                });
+
+                // If the current sheet is not in the list (i.e., it's a new unsaved sheet),
+                // select the disabled "Load Sheet" option
+                if (!selectedOptionExists) {
+                    defaultOption.selected = true;
+                }
+
+                // Disable the dropdown if there are no stylesheets
+                loadSheet.disabled = stylesheetList.length === 0;
+
+                updateDeleteButtonState();
+            }
+
+            function updateDeleteButtonState() {
+                const deleteButton = document.getElementById('delete-sheet');
+                const loadSheet = document.getElementById('load-sheet');
+                
+                if (deleteButton && loadSheet) {
+                    const stylesheetList = getStylesheetList();
+                    
+                    // Disable delete button if:
+                    // 1. There are no saved stylesheets, or
+                    // 2. The current stylesheet is "Untitled", or
+                    // 3. The current stylesheet is not in the list of saved stylesheets
+                    deleteButton.disabled = stylesheetList.length === 0 || 
+                                            currentSheetName === 'Untitled' || 
+                                            !stylesheetList.includes(currentSheetName);
+                }
+            }
+
+            function handleSheetDeletion() {
+                const loadSheet = document.getElementById('load-sheet');
+                const selectedSheetName = loadSheet.value;
+                
+                if (selectedSheetName) {
+                    if (confirm(`Are you sure you want to delete the sheet "${selectedSheetName}"?`)) {
+                        // Remove the stylesheet from the list and storage
+                        deleteStylesheet(selectedSheetName);
+                        
+                        hasUnsavedChanges = false;
+                        newStylesheetButton.click();
+
+                    }
+                }
+            }
+
+            function deleteStylesheet(sheetName) {
+                // Remove the stylesheet data from localStorage
+                localStorage.removeItem(sheetName);
+                
+                // Remove from the stylesheet list
+                removeStylesheetFromList(sheetName);
+                
+                // Remove from sessionStorage if it exists there
+                sessionStorage.removeItem(sheetName);
+            }
+
+            function createNewStylesheet() {
+                // Set the current sheet name to 'Untitled'
+                setCurrentSheetName('Untitled');
+                
+                // Load the default state (this should create a new, empty stylesheet)
+                loadDefaultState();
+                
+                // Update UI
+                document.title = 'Untitled - UI Kit Editor';
+                updateLoadSheetDropdown();
+                updateDeleteButtonState();
+                updateSaveIndicator(false);
+            }
+
+            document.getElementById('delete-sheet').addEventListener('click', handleSheetDeletion);
+
+            // Event listeners for new UI controls
+            document.getElementById('save-sheet').addEventListener('click', () => {
+                let sheetname = currentSheetName;
+                // prompt for non empty string sheet name
+                if (sheetname === 'Untitled') {
+                    sheetname = prompt('Enter a name for the stylesheet');
+                    if (sheetname === null) {
+                        return;
+                    }
+                    while (sheetname === 'Untitled') {
+                        pname = prompt('Please enter a non-empty name for the stylesheet');
+                        if (pname === null) {
+                            return;
+                        }
+
+                        // check that pname is not one of the already saved stylesheet names
+                        // otherwise we may prompt for overwrite
+                        if (getStylesheetList().includes(pname)) {
+                            if (!confirm(`A stylesheet named "${pname}" already exists. Do you want to overwrite it?`)) {
+                                sheetname = 'Untitled';
+                                continue;
+                            }
+                        }
+                        sheetname = pname;
+                    }
+                }
+                setCurrentSheetName(sheetname);
+                addStylesheetToList(currentSheetName);
+                saveCurrentState(true);  // Pass true to indicate an explicitly persisted save
+                updateLoadSheetDropdown();
+                updateSaveIndicator();  // Update the save indicatorTODO review necessity for these calls
+                updateDeleteButtonState();
+            });
+
+            document.getElementById('load-sheet').addEventListener('change', (e) => {
+                const selectedSheetName = e.target.value;
+    
+                // Check if a valid sheet is selected
+                if (!selectedSheetName) {
+                    console.warn('No stylesheet selected');
+                    return; // Exit the function if no valid selection
+                }
+
+                // Prevent switching to the same sheet
+                if (selectedSheetName === currentSheetName) {
+                    console.log('Already on this stylesheet');
+                    return; // Exit the function if trying to switch to the current sheet
+                }
+
+                if (hasUnsavedChanges) {
+                    const warningMessage = `Warning: You have unsaved changes in the current stylesheet "${currentSheetName}". Proceeding will discard these changes. Do you still wish to continue?`;
+                    
+                    if (confirm(warningMessage)) {
+                        // User chose to discard changes and switch
+                        discardChanges();
+                        loadSelectedSheet(selectedSheetName);
+                    } else {
+                        // User chose to keep current changes, abort the operation
+                        e.target.value = currentSheetName; // Revert the dropdown to the current sheet
+                    }
+                } else {
+                    // No unsaved changes, load the selected sheet directly
+                    loadSelectedSheet(selectedSheetName);
+                }
+            });
+
+            function discardChanges() {
+                // Remove the current state from sessionStorage
+                sessionStorage.removeItem(currentSheetName);
+                // If there's a saved version in localStorage, load that
+                const savedState = localStorage.getItem(currentSheetName);
+                if (savedState) {
+                    sessionStorage.setItem(currentSheetName, savedState);
+                }
+                hasUnsavedChanges = false;
+            }
+
+            function loadSelectedSheet(selectedSheetName) {
+                setCurrentSheetName(selectedSheetName);
+                if (selectedSheetName) {
+                    const loaded = loadState(selectedSheetName);
+                    if (!loaded) {
+                        document.body.innerHTML = `SYSERR: failure loading stylesheet ${selectedSheetName}`;
+                        document.title = 'SYSERR';
+                        return;
+                    }
+                    document.title = selectedSheetName + ' - UI Kit Editor';
+                }
+                updateLoadSheetDropdown();
+                updateDeleteButtonState();
+                hasUnsavedChanges = false;
+            }
+
+            document.getElementById("reset-css-toggle").addEventListener('change', () => {
+                updateGlobalCSS();
+                saveCurrentState();
+            });
+
+            document.getElementById('download-sheet').addEventListener('click', () => {
+                const stylesheet = createStylesheet();
+                const currentDate = new Date().toLocaleString();
+                
+                const htmlContent = `
+                    <!DOCTYPE html>
+                    <html lang="en">
+                    <head>
+                        <meta charset="UTF-8">
+                        <meta name="viewport" content="width=device-width, initial-scale=1.0">
+                        <title>${currentSheetName} - CSS Stylesheet</title>
+                        <style>
+                            body {
+                                font-family: Arial, sans-serif;
+                                line-height: 1.6;
+                                padding: 20px;
+                                margin: 0 auto;
+                            }
+                        </style>
+                    </head>
+                    <body>
+                        <h1>${currentSheetName} - CSS Stylesheet</h1>
+                        <p>Generated on: ${currentDate}</p>
+                        <hr>
+                        <p><i>Double-click code to select</i></p>
+                        <pre id="dl-css">${stylesheet}</pre>
+                    </body>
+                    </html>
+                `;
+
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write(htmlContent);
+                
+                // Add the script after writing the initial content
+                const script = newWindow.document.createElement('script');
+                script.textContent = `
+                    document.getElementById('dl-css').addEventListener('dblclick', function() {
+                        const range = document.createRange();
+                        range.selectNodeContents(this);
+                        const selection = window.getSelection();
+                        selection.removeAllRanges();
+                        selection.addRange(range);
+                    });
+                `;
+                newWindow.document.body.appendChild(script);
+                
+                newWindow.document.close();
+            });
+
+            function generateFullGoPackage(styleFunctions, packageName) {
+                return `package ${packageName}
+
+import (
+    ui "github.com/atdiar/particleui"
+    doc "github.com/atdiar/particleui/drivers/js"
+    . "github.com/atdiar/particleui/drivers/js/declarative"
+)
+
+${styleFunctions}`;
+            }
+
+            function createEditorContainer(elementType, existingElement=null) {
+                const elementsContainer = document.getElementById('elements-container');
+                const index = elementsContainer.children.length;
+                const id = `${currentSheetName}-element-${index}`;
+                const editorContainer = document.createElement('div');
+                editorContainer.className = 'editor-container';
+                editorContainer.id = id;                
+
+                let elementName;
+                switch (elementType) {
+                    case 'a': elementName = 'Anchor'; break;
+                    case 'blockquote': elementName = 'Block Quote'; break;
+                    case 'button': elementName = 'Button'; break;
+                    case 'code': elementName = 'Code'; break;
+                    case 'div': elementName = 'Division'; break;
+                    case 'form': elementName = 'Form'; break;
+                    case 'h1': elementName = 'Heading 1'; break;
+                    case 'h2': elementName = 'Heading 2'; break;
+                    case 'h3': elementName = 'Heading 3'; break;
+                    case 'h4': elementName = 'Heading 4'; break;
+                    case 'h5': elementName = 'Heading 5'; break;
+                    case 'h6': elementName = 'Heading 6'; break;
+                    case 'img': elementName = 'Image'; break;
+                    case 'ol': elementName = 'Ordered List'; break;
+                    case 'p': elementName = 'Paragraph'; break;
+                    case 'pre': elementName = 'Preformatted Text'; break;
+                    case 'table': elementName = 'Table'; break;
+                    case 'ul': elementName = 'Unordered List'; break;
+                    default: elementName = elementType.charAt(0).toUpperCase() + elementType.slice(1);
+                }
+
+                let elementHtml;
+                if (existingElement) {
+                    elementHtml = existingElement.html;
+                } else if (elementType === 'form') {
+                    elementHtml = `
+                        <form id="${id}">
+                            <div>
+                                <label for="${id}-text">Text Input:</label>
+                                <input type="text" id="${id}-text" name="text" placeholder="Enter text">
+                            </div>
+                            <div>
+                                <label for="${id}-password">Password:</label>
+                                <input type="password" id="${id}-password" name="password" placeholder="Enter password">
+                            </div>
+                            <div>
+                                <label for="${id}-email">Email:</label>
+                                <input type="email" id="${id}-email" name="email" placeholder="Enter email">
+                            </div>
+                            <div>
+                                <label for="${id}-number">Number:</label>
+                                <input type="number" id="${id}-number" name="number" placeholder="Enter number">
+                            </div>
+                            <div>
+                                <label for="${id}-date">Date:</label>
+                                <input type="date" id="${id}-date" name="date">
+                            </div>
+                            <div>
+                                <label for="${id}-checkbox">Checkbox:</label>
+                                <input type="checkbox" id="${id}-checkbox" name="checkbox">
+                            </div>
+                            <div>
+                                <label>Radio Buttons:</label>
+                                <input type="radio" id="${id}-radio1" name="radio" value="1">
+                                <label for="${id}-radio1">Option 1</label>
+                                <input type="radio" id="${id}-radio2" name="radio" value="2">
+                                <label for="${id}-radio2">Option 2</label>
+                            </div>
+                            <div>
+                                <label for="${id}-select">Select:</label>
+                                <select id="${id}-select" name="select">
+                                    <option value="">Choose an option</option>
+                                    <option value="1">Option 1</option>
+                                    <option value="2">Option 2</option>
+                                    <option value="3">Option 3</option>
+                                </select>
+                            </div>
+                            <div>
+                                <label for="${id}-textarea">Textarea:</label>
+                                <textarea id="${id}-textarea" name="textarea" placeholder="Enter long text"></textarea>
+                            </div>
+                            <div>
+                                <input type="submit" value="Submit">
+                                <input type="reset" value="Reset">
+                            </div>
+                        </form>
+                    `;
+                } else if (elementType === 'a') {
+                    elementHtml = `<a href="https://zui.dev" id="${id}" onclick="event.preventDefault();">Link to zui.dev</a>`;
+                } else if (elementType.startsWith('input[type=')) {
+                    const inputType = elementType.match(/'([^']+)'/)[1];
+                    elementHtml = `<input type="${inputType}" id="${id}" placeholder="Sample ${inputType} input">`;
+                } else if (elementType === 'ul' || elementType === 'ol') {
+                    elementHtml = `<${elementType} id="${id}"><li>Item 1</li><li>Item 2</li><li>Item 3</li></${elementType}>`;
+                } else if (elementType === 'select') {
+                    elementHtml = `<select id="${id}"><option>Option 1</option><option>Option 2</option><option>Option 3</option></select>`;
+                } else if (elementType === 'img') {
+                    elementHtml = `<img id="${id}" src="https://via.placeholder.com/150" alt="Sample image">`;
+                } else if (elementType === 'table') {
+                    elementHtml = `
+                        <table id="${id}">
+                            <tr><th>Header 1</th><th>Header 2</th></tr>
+                            <tr><td>Row 1, Cell 1</td><td>Row 1, Cell 2</td></tr>
+                            <tr><td>Row 2, Cell 1</td><td>Row 2, Cell 2</td></tr>
+                        </table>
+                    `;
+                } else if (elementType === 'blockquote') {
+                    elementHtml = `<blockquote id="${id}">This is a blockquote. It is often used for quotations.</blockquote>`;
+                } else if (elementType === 'code') {
+                    elementHtml = `<code id="${id}">console.log("This is a code sample");</code>`;
+                } else if (elementType === 'pre') {
+                    elementHtml = `
+<pre id="${id}"><code>
+function example() {
+    console.log("preformatted plop!");
+}
+</code></pre>`;
+                } else {
+                    elementHtml = `<${elementType} id="${id}">Sample ${elementType}</${elementType}>`;
+                }
+                
+
+                editorContainer.innerHTML = `
+    <div class="element-container">
+        <h2>${elementName}</h2>
+        <div class="editable-element-container">
+            <i>Double-click to edit</i>
+            <div class="editable-element">${elementHtml}</div>
+        </div>
+        <textarea class="html-editor" style="display: none; width: 100%; height: 150px;"></textarea>
+        <button class="remove-element">Remove Element</button>
+    </div>`;
+
+    const cssEditorHtml = `
+    <div class="css-editor">
+        <div class="pseudo-selector">
+            <label>Pseudo-selector:</label>
+            <select class="pseudo-selector-select">
+                <option value="">None</option>
+                <option value=":hover">:hover</option>
+                <option value=":active">:active</option>
+                <option value=":focus">:focus</option>
+                <option value=":visited">:visited</option>
+                <option value=":first-child">:first-child</option>
+                <option value=":last-child">:last-child</option>
+                <option value=":nth-child(odd)">:nth-child(odd)</option>
+                <option value=":nth-child(even)">:nth-child(even)</option>
+            </select>
+        </div>
+        <div class="css-display-area">
+            <i>Double-click to edit (Shift + Enter for newline)</i>
+            <pre class="css-display" tabindex="0"></pre>
+        </div>
+        <div class="css-textareas">
+            <textarea class="css-textarea" data-pseudo="" style="display: none;" placeholder="Add your CSS code here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":hover" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":active" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":focus" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":visited" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":first-child" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":last-child" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":nth-child(odd)" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+            <textarea class="css-textarea" data-pseudo=":nth-child(even)" style="display: none;" placeholder="Add your CSS properties here"></textarea>
+        </div>
+    </div>`;
+
+                editorContainer.innerHTML += cssEditorHtml;
+
+                const editableElementContainer = editorContainer.querySelector('.editable-element-container');
+                const editableElement = editableElementContainer.querySelector('.editable-element');
+                const htmlEditor = editorContainer.querySelector('.html-editor');
+                const cssDisplay = editorContainer.querySelector('.css-display');
+                const cssTextareas = editorContainer.querySelectorAll('.css-textarea');
+                const pseudoSelector = editorContainer.querySelector('.pseudo-selector-select');
+                pseudoSelector.previousValue = '';
+                const tagName = editableElement.children[0].tagName.toLowerCase();
+                
+
+                function toggleCSSEdit() {
+                    const currentTextarea = editorContainer.querySelector(`.css-textarea[data-pseudo="${pseudoSelector.value}"]`);
+                    if (cssDisplay.style.display !== 'none') {
+                        cssDisplay.style.display = 'none';
+                        currentTextarea.style.display = 'block';
+                        currentTextarea.focus();
+                    } else {
+                        cssDisplay.style.display = 'block';
+                        currentTextarea.style.display = 'none';
+                        updateCSSDisplay(editorContainer, elementType, pseudoSelector.value);
+                    }
+                }
+
+
+                cssDisplay.addEventListener('dblclick', toggleCSSEdit);
+                cssDisplay.addEventListener('keydown', (e) => {
+                    if (e.key === 'Enter' || e.key === ' ') {
+                        toggleCSSEdit();
+                    }
+                });
+
+                cssTextareas.forEach(textarea => {
+                    textarea.addEventListener('blur', () => {
+                        const pseudoSelector = editorContainer.querySelector('.pseudo-selector-select');
+                        if (pseudoSelector.value === '') {
+                            // For 'None', we're dealing with full CSS, not just properties
+                            textarea.value = formatGlobalCSS(textarea.value);
+                        } else {
+                            // For other pseudo-selectors, format only the properties
+                            textarea.value = formatCSSProperties(textarea.value);
+                        }
+                        toggleCSSEdit();
+                        applyCSS(editorContainer);
+                        saveCurrentState();
+                    });
+                    textarea.addEventListener('input', () => {
+                        try {
+                            updateCSSDisplay(editorContainer, elementType, pseudoSelector.value);
+                        } catch (e) {
+                        }
+    
+                    });
+
+                    const pseudo = textarea.dataset.pseudo;
+                    if (pseudo === '') {
+                        // Set default CSS for the main selector
+                        textarea.value = `${tagName} {\n\n}`;
+                    } else {
+                        // Set default CSS for pseudo-selectors
+                        textarea.value = ``;
+                    }
+
+                    textarea.addEventListener('keydown', function(e) {
+                        if (e.key === 'Escape') {
+                            this.blur();
+                        } else if (e.key === 'Enter') {
+                            if (e.shiftKey && e.ctrlKey) {
+                                // Shift + Control + Enter: Insert new line with indentation
+                                e.preventDefault();
+                                const start = this.selectionStart;
+                                const end = this.selectionEnd;
+                                const value = this.value;
+                                
+                                // Find the start of the current line
+                                let lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                                let indent = '';
+                                
+                                // Calculate the current line's indentation
+                                for (let i = lineStart; i < value.length; i++) {
+                                    if (value[i] === ' ' || value[i] === '\t') {
+                                        indent += value[i];
+                                    } else {
+                                        break;
+                                    }
+                                }
+                                
+                                // Insert new line with indentation
+                                const insertion = '\n' + indent;
+                                this.value = value.substring(0, start) + insertion + value.substring(end);
+                                
+                                // Move the cursor to the end of the inserted indentation
+                                this.selectionStart = this.selectionEnd = start + insertion.length;
+                            } else if (!e.shiftKey && !e.ctrlKey) {
+                                // Plain Enter: Save and blur
+                                e.preventDefault();
+                                this.blur();
+                            }
+                        } else if (e.key === 'Tab') {
+                            e.preventDefault(); // Prevent default tab behavior
+                            const start = this.selectionStart;
+                            const end = this.selectionEnd;
+                            const value = this.value;
+                            if (start === end) {
+                                // No selection, just insert or remove tab
+                                if (!e.shiftKey) {
+                                    // Insert tab
+                                    this.value = value.substring(0, start) + "\t" + value.substring(end);
+                                    this.selectionStart = this.selectionEnd = start + 1;
+                                } else if (start > 0) {
+                                    // Remove tab (if exists) at the start of the line
+                                    const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                                    if (value[lineStart] === '\t') {
+                                        this.value = value.substring(0, lineStart) + value.substring(lineStart + 1);
+                                        this.selectionStart = this.selectionEnd = start - 1;
+                                    }
+                                }
+                            } else {
+                                // Text is selected, indent or unindent block
+                                const lines = value.substring(start, end).split('\n');
+                                const indentedLines = lines.map(line => 
+                                    !e.shiftKey ? '\t' + line : line.startsWith('\t') ? line.substring(1) : line
+                                );
+                                const replacement = indentedLines.join('\n');
+                                this.value = value.substring(0, start) + replacement + value.substring(end);
+                                this.selectionStart = start;
+                                this.selectionEnd = start + replacement.length;
+                            }
+                        }
+                    }); 
+                });
+
+                pseudoSelector.addEventListener('change', () => {
+                    const currentTextarea = editorContainer.querySelector(`.css-textarea[data-pseudo="${pseudoSelector.value}"]`);
+                    
+                    if (pseudoSelector.value === '') {
+                        // Switching to 'None', ensure the full selector is present
+                        if (!currentTextarea.value.trim().startsWith(tagName)) {
+                            currentTextarea.value = `${tagName} {\n${currentTextarea.value.trim()}\n}`;
+                        }
+                    } else if (pseudoSelector.previousValue === '') {
+                        // Switching from 'None' to a pseudo-selector, extract property-value pairs
+                        const css = currentTextarea.value.trim();
+                        const match = css.match(/{([^}]*)}/);
+                        if (match) {
+                            currentTextarea.value = match[1].trim();
+                        }
+                    }
+
+                    pseudoSelector.previousValue = pseudoSelector.value;
+                    toggleCSSEdit();
+                    applyCSS(editorContainer);
+                });
+
+
+                editableElement.addEventListener('dblclick', function () {
+                    htmlEditor.value = this.innerHTML;
+                    this.style.display = 'none';
+                    htmlEditor.style.display = 'block';
+                    htmlEditor.focus();
+                });
+
+                htmlEditor.addEventListener('blur', function () {
+                    const originalContent = editableElement.innerHTML;
+                    try {
+                        const parser = new DOMParser();
+                        const doc = parser.parseFromString(this.value, 'text/html');
+                        if (doc.body.firstChild) {
+                            editableElement.innerHTML = this.value;
+                        } else {
+                            throw new Error('Invalid HTML');
+                        }
+                    } catch (e) {
+                        console.error('Invalid HTML:', e);
+                        editableElement.innerHTML = editableElement.getAttribute('data-original-html');
+                    }
+
+                    this.style.display = 'none';
+                    editableElement.style.display = 'block';
+
+                    // Only save if the content has changed
+                    if (originalContent !== editableElement.innerHTML) {
+                        const elementName = editorContainer.querySelector('h2').textContent;
+                        saveCurrentState();
+                    }
+                });
+
+                htmlEditor.addEventListener('keydown', function(e) {
+                    if (e.key === 'Escape') {
+                        this.blur();
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault(); // Prevent default tab behavior
+
+                        const start = this.selectionStart;
+                        const end = this.selectionEnd;
+                        const value = this.value;
+
+                        if (start === end) {
+                            // No selection, just insert tab
+                            if (!e.shiftKey) {
+                                // Insert tab
+                                this.value = value.substring(0, start) + "\t" + value.substring(end);
+                                this.selectionStart = this.selectionEnd = start + 1;
+                            } else if (start > 0) {
+                                // Remove tab (if exists) at the start of the line
+                                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                                if (value[lineStart] === '\t') {
+                                    this.value = value.substring(0, lineStart) + value.substring(lineStart + 1);
+                                    this.selectionStart = this.selectionEnd = start - 1;
+                                }
+                            }
+                        } else {
+                            // Text is selected, indent or unindent block
+                            const lines = value.substring(start, end).split('\n');
+                            const indentedLines = lines.map(line => 
+                                !e.shiftKey ? '\t' + line : line.startsWith('\t') ? line.substring(1) : line
+                            );
+                            const replacement = indentedLines.join('\n');
+                            this.value = value.substring(0, start) + replacement + value.substring(end);
+                            this.selectionStart = start;
+                            this.selectionEnd = start + replacement.length;
+                        }
+                    }
+                });
+
+                editorContainer.querySelector('.remove-element').addEventListener('click', () => {
+                    editorContainer.remove();
+                    clearElementStyles(id);
+                    cleanupStyleElements();
+                    updateElementIds();
+                    saveCurrentState();
+                    updateElementSelector();
+                });
+
+                const goCodeButton = document.createElement('button');
+                goCodeButton.textContent = 'View Go Code';
+                goCodeButton.classList.add('view-go-code-btn');
+                editorContainer.appendChild(goCodeButton);
+                
+
+                goCodeButton.addEventListener('click', () => {
+                    if (goCodeButton.disabled) return;
+
+                    const elementId = editorContainer.id;
+                    const styleElement = document.querySelector(`style[data-for="${elementId}"]`);
+                    
+                    if (styleElement) {
+                        const fullCSS = styleElement.textContent.trim();
+                        try {
+                            const ast = parseCSS(fullCSS);
+                            if (ast.stylesheet.rules.length > 0) {
+                                const { beautifiedCSS, goCode, errors } = cssToGoCode(fullCSS);
+                                const packageName = currentSheetName.replace(/[^\w]/g, '').toLowerCase();
+                                const fullGoCode = generateFullGoPackage(goCode, packageName);
+                                showModal(`${elementType} Go Code`, fullGoCode, errors, beautifiedCSS);
+                                return;
+                            }
+                        } catch (error) {
+                            console.error(`Error parsing CSS for ${elementId}:`, error);
+                        }
+                    }
+                    
+                    showModal(`${elementType} Go Code`, 'No specific styles added to this element', [], '');
+                });
+
+                
+                if (existingElement && existingElement.styles) {
+                    existingElement.styles.forEach(style => {
+                        const textarea = editorContainer.querySelector(`.css-textarea[data-pseudo="${style.pseudo}"]`);
+                        if (textarea) {
+                            textarea.value = style.css;
+                        }
+                    });
+                }
+
+                elementsContainer.appendChild(editorContainer);
+
+                updateCSSDisplay(editorContainer, elementType, '');
+                applyCSS(editorContainer);
+
+                saveCurrentState();
+                updateElementSelector();
+            }
+
+            function updateElementSelector() {
+                const elementSelector = document.getElementById('element-selector');
+                const addedElements = new Set(Array.from(document.querySelectorAll('.editor-container')).map(container => 
+                    container.querySelector('.editable-element').children[0].tagName.toLowerCase()
+                ));
+
+                Array.from(elementSelector.options).forEach(option => {
+                    const elementType = option.value.split('[')[0]; // Handle cases like 'input[type='text']'
+                    if (addedElements.has(elementType)) {
+                        option.disabled = true;
+                    } else {
+                        option.disabled = false;
+                    }
+                });
+            }
+
+            document.getElementById('add-element').addEventListener('click', () => {
+                const selector = document.getElementById('element-selector');
+                const selectedElement = selector.value;
+                if (selectedElement && !selector.options[selector.selectedIndex].disabled) {
+                    createEditorContainer(selectedElement);
+                    selector.value = ''; // Reset selection after adding
+                } else if (selector.options[selector.selectedIndex].disabled) {
+                    alert('This element has already been added.');
+                }
+            });
+
+            function clearElementStyles(elementId) {
+                const styleTag = document.querySelector(`style[data-for="${elementId}"]`);
+                if (styleTag) {
+                    styleTag.remove();
+                }
+            }
+
+            function cssTextToObject(cssText) {
+                const obj = {};
+                const pairs = cssText.split(';');
+                for (let i = 0; i < pairs.length; i++) {
+                    const pair = pairs[i].split(':');
+                    const property = pair[0].trim();
+                    const value = pair[1] ? pair[1].trim() : '';
+                    if (property && value) {
+                        obj[property] = value;
+                    }
+                }
+                return obj;
+            }
+
+            function objectToCSSText(obj) {
+                return Object.entries(obj).map(([prop, value]) => `${prop}: ${value};`).join(' ');
+            }
+
+            function formatCSSProperties(css) {
+                const formattedProps = css.split(';')
+                    .map(prop => prop.trim())
+                    .filter(prop => prop && prop !== ';')
+                    .join(';\n');
+                
+                return formattedProps ? formattedProps + ';' : '';
+            }
+
+
+            function applyCSS(container) {
+                const editorContainer = container;
+                const containerId = editorContainer.id;
+                if (!editorContainer) {
+                    console.log(container)
+                    throw new Error(`Editor container with id ${containerId} not found.`);
+                }
+
+                const editableElement = editorContainer.querySelector('.editable-element');
+                const cssEditor = editorContainer.querySelector('.css-editor');
+                const cssTextareas = cssEditor.querySelectorAll('.css-textarea');
+                const pseudoSelector = cssEditor.querySelector('.pseudo-selector-select');
+
+                if (!editableElement || !cssEditor || cssTextareas.length === 0 || !pseudoSelector) {
+                    throw new Error(`Required elements not found in container ${containerId}`);
+                }
+
+                const tagName = editableElement.children[0].tagName.toLowerCase();
+                let cssContent = '';
+
+                cssTextareas.forEach(textarea => {
+                    const pseudo = textarea.dataset.pseudo;
+                    let css = textarea.value.trim();
+                    if (css) {
+                        if (pseudo === '') {
+                            // For 'None' pseudo, the textarea already contains the full CSS rule
+                            cssContent += css + '\n\n';
+                        } else {
+                            cssContent += `${tagName}${pseudo} {\n${css}\n}\n\n`;
+                        }
+                    }
+                });
+                updateCSS(containerId, formatGlobalCSS(cssContent));
+                updateCSSDisplay(editorContainer, tagName, pseudoSelector.value);
+            }
+
+            function updateCSSDisplay(editorContainer, tagName, currentPseudo) {
+                const cssDisplay = editorContainer.querySelector('.css-display');
+                const cssTextarea = editorContainer.querySelector(`.css-textarea[data-pseudo="${currentPseudo}"]`);
+                
+                if (cssDisplay && cssTextarea) {
+                    let css = cssTextarea.value.trim();
+                    let formattedCSS;
+                    
+                    if (currentPseudo === '') {
+                        // For 'None' pseudo, display the raw CSS as is
+                        formattedCSS = css ? formatGlobalCSS(css) : `${tagName} {\n\n}`;
+                    } else {
+                        // For other pseudos, wrap the CSS in a rule
+                        const formattedProperties = formatCSSProperties(css);
+                        formattedCSS = formatGlobalCSS(`${tagName}${currentPseudo} {\n${formattedProperties}\n}`);
+                    }
+                    
+                    cssDisplay.textContent = beautifyCSS(parseCSS(formattedCSS), '\t');
+                }
+            }
+
+            function updateCSS(elementId, cssContent) {
+                let styleTag = document.querySelector(`style[data-for="${elementId}"]`);
+                
+                try {
+                    const ast = parseCSS(cssContent);
+                    const hasValidDeclarations = ast.stylesheet.rules.some(rule => 
+                        rule.type === 'rule' && rule.declarations && 
+                        rule.declarations.some(decl => decl.property && decl.property.trim() && decl.value && decl.value.trim())
+                    );
+
+                    if (!hasValidDeclarations) {
+                        if (styleTag) {
+                            styleTag.remove();
+                        }
+                        return false;
+                    }
+                    
+                    if (!styleTag) {
+                        styleTag = document.createElement('style');
+                        styleTag.setAttribute('data-for', elementId);
+                        document.head.appendChild(styleTag);
+                    }
+                    
+                    styleTag.textContent = cssContent;
+                    return true;
+                    
+                } catch (error) {
+                    console.error(`Error parsing CSS for ${elementId}:`, error);
+                    if (styleTag) {
+                        styleTag.remove();
+                    }
+                    return false;
+                }
+            }
+
+            function updateBackgroundColorPicker() {
+                if (backgroundColorPicker) {
+                    const computedStyle = getComputedStyle(document.body);
+                    const currentBgColor = computedStyle.backgroundColor;
+                    backgroundColorPicker.value = rgbToHex(currentBgColor);
+                }
+            }
+
+            // Helper function to convert RGB to HEX
+            function rgbToHex(rgb) {
+                if (rgb.startsWith('#')) return rgb;
+                const rgbValues = rgb.match(/\d+/g);
+                if (!rgbValues) return '#ffffff';
+                return "#" + rgbValues.map(x => parseInt(x).toString(16).padStart(2, '0')).join('');
+            }
+
+            function debounce(func, wait) {
+                let timeout;
+                return function executedFunction(...args) {
+                    const later = () => {
+                        clearTimeout(timeout);
+                        func(...args);
+                    };
+                    clearTimeout(timeout);
+                    timeout = setTimeout(later, wait);
+                };
+            }
+                        
+
+            function cssbeautify(css) {
+                const ast = parseCSS(css);
+                return beautifyCSS(ast, '\t');
+            }
+
+            function formatGlobalCSS(css) {
+                return cssbeautify(css);
+            }
+            if (globalCSS) {
+                
+                globalCSS.addEventListener('input', debounce(() => {
+                    updateGlobalCSS();
+                }, 75));
+
+                globalCSS.addEventListener('blur', () => {
+                    globalCSS.value = formatGlobalCSS(globalCSS.value);
+                    updateGlobalCSS();
+                    saveCurrentState();
+                    updateSaveIndicator();
+                });
+                
+                globalCSS.addEventListener('keydown', function(e){
+                    if (e.key === 'Escape') {
+                        this.blur();
+                    } else if (e.key === 'Tab') {
+                        e.preventDefault(); // Prevent default tab behavior
+
+                        const start = this.selectionStart;
+                        const end = this.selectionEnd;
+                        const value = this.value;
+
+                        if (start === end) {
+                            // No selection, just insert tab
+                            if (!e.shiftKey) {
+                                // Insert tab
+                                this.value = value.substring(0, start) + "\t" + value.substring(end);
+                                this.selectionStart = this.selectionEnd = start + 1;
+                            } else if (start > 0) {
+                                // Remove tab (if exists) at the start of the line
+                                const lineStart = value.lastIndexOf('\n', start - 1) + 1;
+                                if (value[lineStart] === '\t') {
+                                    this.value = value.substring(0, lineStart) + value.substring(lineStart + 1);
+                                    this.selectionStart = this.selectionEnd = start - 1;
+                                }
+                            }
+                        } else {
+                            // Text is selected, indent or unindent block
+                            const lines = value.substring(start, end).split('\n');
+                            const indentedLines = lines.map(line => 
+                                !e.shiftKey ? '\t' + line : line.startsWith('\t') ? line.substring(1) : line
+                            );
+                            const replacement = indentedLines.join('\n');
+                            this.value = value.substring(0, start) + replacement + value.substring(end);
+                            this.selectionStart = start;
+                            this.selectionEnd = start + replacement.length;
+                        }
+                    }
+                })
+
+            }
+
+            const modal = document.getElementById('goCodeModal');
+            const modalTitle = document.getElementById('modalTitle');
+            const modalGoCode = document.getElementById('modalGoCode');
+            const closeBtn = modal.querySelector('.close');
+            const focusableElements = modal.querySelectorAll('button, [href], input, select, textarea, [tabindex]:not([tabindex="-1"])');
+            const firstFocusableElement = focusableElements[0];
+            const lastFocusableElement = focusableElements[focusableElements.length - 1];
+
+            // double click to select all text in the pre element
+            modalGoCode.addEventListener('dblclick', function() {
+                const range = document.createRange();
+                range.selectNodeContents(this);
+                const selection = window.getSelection();
+                selection.removeAllRanges();
+                selection.addRange(range);
+            });
+
+            function showModal(title, code, errors) {
+                modalTitle.textContent = title;
+                modalGoCode.textContent = code;
+                
+                // Display errors if any
+                if (errors && errors.length > 0) {
+                    const errorMessage = errors.map(error => {
+                        if (error.pseudoSelector) {
+                            return `Error on line ${error.lineNumber}: Invalid pseudo-selector ":${error.pseudoSelector}" in selector "${error.selector}"`;
+                        } else if (error.property) {
+                            return `Error on line ${error.lineNumber}: Unknown property "${error.property}" in selector "${error.selector}"`;
+                        }
+                    }).join('\n');
+                    modalGoCode.textContent += '\n\n// Errors:\n' + errorMessage;
+                }
+                
+                // Add or update copy button
+                let copyButton = modal.querySelector('#copyGoCode');
+                if (!copyButton) {
+                    copyButton = document.createElement('button');
+                    copyButton.id = 'copyGoCode';
+                    copyButton.textContent = 'Copy code';
+                    copyButton.style.cursor = 'pointer';
+                    modalGoCode.parentNode.insertBefore(copyButton, modalGoCode.nextSibling);
+                }
+
+                copyButton.onclick = function() {
+                    navigator.clipboard.writeText(modalGoCode.textContent).then(() => {
+                        const originalText = this.textContent;
+                        this.textContent = 'Copied!';
+                        setTimeout(() => {
+                            this.textContent = originalText;
+                        }, 2000);
+                    }, (err) => {
+                        console.error('Could not copy text: ', err);
+                    });
+                };
+                
+                modal.style.display = 'block';
+                if (firstFocusableElement){
+                    firstFocusableElement.focus();
+                } else{
+                    modalGoCode.focus();
+                }
+ 
+                document.addEventListener('keydown', handleModalKeydown);
+            }
+
+            function closeModal() {
+                modal.style.display = 'none';
+                document.removeEventListener('keydown', handleModalKeydown);
+            }
+
+            function handleModalKeydown(e) {
+                if (e.key === 'Escape') {
+                    closeModal();
+                } else if (e.key === 'Tab') {
+                    // Trap focus within the modal
+                    if (e.shiftKey) {
+                        if (document.activeElement === firstFocusableElement) {
+                            e.preventDefault();
+                            lastFocusableElement.focus();
+                        }
+                    } else {
+                        if (document.activeElement === lastFocusableElement) {
+                            e.preventDefault();
+                            firstFocusableElement.focus();
+                        }
+                    }
+                }
+            }
+
+            closeBtn.onclick = closeModal;
+
+            window.onclick = (event) => {
+                if (event.target === modal) {
+                    closeModal();
+                }
+            };
+
+            // Event listend for the download go code button
+            document.getElementById('download-go-code').addEventListener('click', () => {
+                let allCSS = '';
+                let allErrors = [];
+                const packageName = currentSheetName.replace(/[^\w]/g, '').toLowerCase();
+
+                document.querySelectorAll('.editor-container').forEach(container => {
+                    const elementType = container.querySelector('.editable-element').children[0].tagName.toLowerCase();
+                    const cssTextareas = container.querySelectorAll('.css-textarea');
+                    cssTextareas.forEach(textarea => {
+                        const pseudo = textarea.dataset.pseudo;
+                        const css = textarea.value.trim();
+                        if (css) {
+                            if (pseudo === '') {
+                                // For the base selector, use the CSS as-is
+                                allCSS += css + '\n\n';
+                            } else {
+                                // For pseudo-selectors, construct the selector
+                                const selector = `${elementType}:${pseudo}`;
+                                allCSS += `${selector} {\n${css}\n}\n\n`;
+                            }
+                        }
+                    });
+                });
+
+                const {bcss, goCode, errors } = cssToGoCode(allCSS);
+                const fullGoCode = generateFullGoPackage(goCode, packageName);
+
+                if (errors.length > 0) {
+                    console.warn('Errors occurred during Go code generation:', errors);
+                    const errorMessages = errors.map(error => {
+                        if (error.pseudoSelector) {
+                            return `Error in ${error.selector}: Invalid pseudo-selector ":${error.pseudoSelector}" on line ${error.lineNumber}`;
+                        } else if (error.property) {
+                            return `Error in ${error.selector}: Unknown property "${error.property}" on line ${error.lineNumber}`;
+                        }
+                    }).join('\n');
+                    
+                    // Add error messages to the generated Go code
+                    fullGoCode += '\n\n// Errors during code generation:\n' + errorMessages;
+                }
+
+                // Display in new tab
+                const newWindow = window.open('', '_blank');
+                newWindow.document.write(`
+                    <html>
+                        <head>
+                            <title>Download ${packageName} - UI Kit Editor</title>
+                            <style>
+                                body {
+                                    font-family: Arial, sans-serif;
+                                    line-height: 1.6;
+                                    padding: 20px;
+                                    margin: 0 auto;
+                                }
+                            </style>
+                        </head>
+                        <body>
+                            <div id=codeControls style='display:flex; align-items:center;'>
+                                <button id="downloadBtn">Download file</button>
+                                <button id="copyBtn">Copy Code</button>
+                            </div>
+                            <hr>
+                            <p><i>Double-click code to select</i></p>
+
+                            <pre>${fullGoCode.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;').replace(/'/g, '&#039;')}</pre>
+                            
+                             <script>
+                                document.getElementById('downloadBtn').addEventListener('click', function() {
+                                    const blob = new Blob([document.querySelector('pre').textContent], { type: 'text/plain' });
+                                    const url = URL.createObjectURL(blob);
+                                    const a = document.createElement('a');
+                                    a.href = url;
+                                    a.download = '${packageName}.go';
+                                    document.body.appendChild(a);
+                                    a.click();
+                                    document.body.removeChild(a);
+                                    URL.revokeObjectURL(url);
+                                });
+
+                                document.getElementById('copyBtn').addEventListener('click', function() {
+                                    const codeText = document.querySelector('pre').textContent;
+                                    navigator.clipboard.writeText(codeText).then(() => {
+                                        const originalText = this.textContent;
+                                        this.textContent = 'Copied!';
+                                        setTimeout(() => {
+                                            this.textContent = originalText;
+                                        }, 2000);
+                                    }, (err) => {
+                                        console.error('Could not copy text: ', err);
+                                    });
+                                });
+
+                                document.querySelector('pre').addEventListener('dblclick', function() {
+                                    const range = document.createRange();
+                                    range.selectNodeContents(this);
+                                    const selection = window.getSelection();
+                                    selection.removeAllRanges();
+                                    selection.addRange(range);
+                                });
+                                
+                            <\/script>
+                        </body>
+                    </html>
+                `);
+            });
+
+            document.addEventListener('keydown', function(event) {
+                if (event.ctrlKey && event.key === 's') {
+                    event.preventDefault(); // Prevent the default save action
+                    // Find the save button and click it
+                    const saveButton = document.getElementById('save-sheet');
+                    if (saveButton) {
+                        saveButton.click();
+                    } else{
+                        console.error('Save button not found');
+                    }
+                } else if (event.ctrlKey && event.keyCode === 78) {
+                    // Prevent the default browser action (opening a new window)
+                    event.preventDefault();
+
+                    // Find the "New Stylesheet" button and click it
+                    const newStylesheetButton = document.getElementById('new-stylesheet');
+                    if (newStylesheetButton) {
+                        newStylesheetButton.click();
+                    } else {
+                        console.warn('New Stylesheet button not found');
+                    }
+                }
+            });
+
+            if (currentSheetName === 'Untitled') {
+                loadDefaultState();
+            } else {
+                loadState(currentSheetName);
+                updateGlobalCSS();
+            }
+
+            updateLoadSheetDropdown();
+            updateSaveIndicator();
+
+        });
+
+    </script>
+    <script>
+        /* CSS Parser 
+        (The MIT License)
+
+        Copyright (c) 2012 TJ Holowaychuk <tj@vision-media.ca>
+
+        Permission is hereby granted, free of charge, to any person obtaining a copy of this software and associated documentation 
+        files (the 'Software'), to deal in the Software without restriction, including without limitation the rights to use, 
+        copy, modify, merge, publish, distribute, sublicense, and/or sell copies of the Software, and to permit persons to 
+        whom the Software is furnished to do so, subject to the following conditions:
+
+        The above copyright notice and this permission notice shall be included in all copies or substantial portions of the 
+        Software.
+
+        THE SOFTWARE IS PROVIDED 'AS IS', WITHOUT WARRANTY OF ANY KIND, EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED 
+        TO THE WARRANTIES OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
+        AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY, WHETHER IN AN ACTION OF CONTRACT, 
+        TORT OR OTHERWISE, ARISING FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE 
+        SOFTWARE.
+        
+        */
+        var commentre = /\/\*[^*]*\*+([^/*][^*]*\*+)*\//g
+
+        function parseCSS(css, options){
+            options = options || {};
+
+            /**
+             * Positional.
+             */
+
+            var lineno = 1;
+            var column = 1;
+
+            /**
+             * Update lineno and column based on `str`.
+             */
+
+            function updatePosition(str) {
+                var lines = str.match(/\n/g);
+                if (lines) lineno += lines.length;
+                var i = str.lastIndexOf('\n');
+                column = ~i ? str.length - i : column + str.length;
+            }
+
+            /**
+             * Mark position and patch `node.position`.
+             */
+
+            function position() {
+                var start = { line: lineno, column: column };
+                return function(node){
+                node.position = new Position(start);
+                whitespace();
+                return node;
+                };
+            }
+
+            /**
+             * Store position information for a node
+             */
+
+            function Position(start) {
+                this.start = start;
+                this.end = { line: lineno, column: column };
+                this.source = options.source;
+            }
+
+            /**
+             * Non-enumerable source string
+             */
+
+            Position.prototype.content = css;
+
+            /**
+             * Error `msg`.
+             */
+
+            var errorsList = [];
+
+            function error(msg) {
+                var err = new Error(options.source + ':' + lineno + ':' + column + ': ' + msg);
+                err.reason = msg;
+                err.filename = options.source;
+                err.line = lineno;
+                err.column = column;
+                err.source = css;
+
+                if (options.silent) {
+                    errorsList.push(err);
+                } else {
+                    throw err;
+                }
+            }
+
+            /**
+             * Parse stylesheet.
+             */
+
+            function stylesheet() {
+                var rulesList = rules();
+
+                return {
+                    type: 'stylesheet',
+                    stylesheet: {
+                        source: options.source,
+                        rules: rulesList,
+                        parsingErrors: errorsList
+                    }
+                };
+            }
+
+            /**
+             * Opening brace.
+             */
+
+            function open() {
+                return match(/^{\s*/);
+            }
+
+            /**
+             * Closing brace.
+             */
+
+            function close() {
+                return match(/^}/);
+            }
+
+            /**
+             * Parse ruleset.
+             */
+
+            function rules() {
+                var node;
+                var rules = [];
+                whitespace();
+                comments(rules);
+                while (css.length && css.charAt(0) != '}' && (node = atrule() || rule())) {
+                if (node !== false) {
+                    rules.push(node);
+                    comments(rules);
+                }
+                }
+                return rules;
+            }
+
+            /**
+             * Match `re` and return captures.
+             */
+
+            function match(re) {
+                var m = re.exec(css);
+                if (!m) return;
+                var str = m[0];
+                updatePosition(str);
+                css = css.slice(str.length);
+                return m;
+            }
+
+            /**
+             * Parse whitespace.
+             */
+
+            function whitespace() {
+                match(/^\s*/);
+            }
+
+            /**
+             * Parse comments;
+             */
+
+            function comments(rules) {
+                var c;
+                rules = rules || [];
+                while (c = comment()) {
+                if (c !== false) {
+                    rules.push(c);
+                }
+                }
+                return rules;
+            }
+
+            /**
+             * Parse comment.
+             */
+
+            function comment() {
+                var pos = position();
+                if ('/' != css.charAt(0) || '*' != css.charAt(1)) return;
+
+                var i = 2;
+                while ("" != css.charAt(i) && ('*' != css.charAt(i) || '/' != css.charAt(i + 1))) ++i;
+                i += 2;
+
+                if ("" === css.charAt(i-1)) {
+                return error('End of comment missing');
+                }
+
+                var str = css.slice(2, i - 2);
+                column += 2;
+                updatePosition(str);
+                css = css.slice(i);
+                column += 2;
+
+                return pos({
+                type: 'comment',
+                comment: str
+                });
+            }
+
+            /**
+             * Parse selector.
+             */
+
+            function selector() {
+                var m = match(/^([^{]+)/);
+                if (!m) return;
+                /* @fix Remove all comments from selectors
+                * http://ostermiller.org/findcomment.html */
+                return trim(m[0])
+                .replace(/\/\*([^*]|[\r\n]|(\*+([^*/]|[\r\n])))*\*\/+/g, '')
+                .replace(/"(?:\\"|[^"])*"|'(?:\\'|[^'])*'/g, function(m) {
+                    return m.replace(/,/g, '\u200C');
+                })
+                .split(/\s*(?![^(]*\)),\s*/)
+                .map(function(s) {
+                    return s.replace(/\u200C/g, ',');
+                });
+            }
+
+            /**
+             * Parse declaration.
+             */
+
+            function declaration() {
+                var pos = position();
+
+                // prop
+                var prop = match(/^(\*?[-#\/\*\\\w]+(\[[0-9a-z_-]+\])?)\s*/);
+                if (!prop) return;
+                prop = trim(prop[0]);
+
+                // :
+                if (!match(/^:\s*/)) return error("property missing ':'");
+
+                // val
+                var val = match(/^((?:'(?:\\'|.)*?'|"(?:\\"|.)*?"|\([^\)]*?\)|[^};])+)/);
+
+                var ret = pos({
+                type: 'declaration',
+                property: prop.replace(commentre, ''),
+                value: val ? trim(val[0]).replace(commentre, '') : ''
+                });
+
+                // ;
+                match(/^[;\s]*/);
+
+                return ret;
+            }
+
+            /**
+             * Parse declarations.
+             */
+
+            function declarations() {
+                var decls = [];
+
+                if (!open()) return error("missing '{'");
+                comments(decls);
+
+                // declarations
+                var decl;
+                while (decl = declaration()) {
+                if (decl !== false) {
+                    decls.push(decl);
+                    comments(decls);
+                }
+                }
+
+                if (!close()) return error("missing '}'");
+                return decls;
+            }
+
+            /**
+             * Parse keyframe.
+             */
+
+            function keyframe() {
+                var m;
+                var vals = [];
+                var pos = position();
+
+                while (m = match(/^((\d+\.\d+|\.\d+|\d+)%?|[a-z]+)\s*/)) {
+                vals.push(m[1]);
+                match(/^,\s*/);
+                }
+
+                if (!vals.length) return;
+
+                return pos({
+                type: 'keyframe',
+                values: vals,
+                declarations: declarations()
+                });
+            }
+
+            /**
+             * Parse keyframes.
+             */
+
+            function atkeyframes() {
+                var pos = position();
+                var m = match(/^@([-\w]+)?keyframes\s*/);
+
+                if (!m) return;
+                var vendor = m[1];
+
+                // identifier
+                var m = match(/^([-\w]+)\s*/);
+                if (!m) return error("@keyframes missing name");
+                var name = m[1];
+
+                if (!open()) return error("@keyframes missing '{'");
+
+                var frame;
+                var frames = comments();
+                while (frame = keyframe()) {
+                frames.push(frame);
+                frames = frames.concat(comments());
+                }
+
+                if (!close()) return error("@keyframes missing '}'");
+
+                return pos({
+                type: 'keyframes',
+                name: name,
+                vendor: vendor,
+                keyframes: frames
+                });
+            }
+
+            /**
+             * Parse supports.
+             */
+
+            function atsupports() {
+                var pos = position();
+                var m = match(/^@supports *([^{]+)/);
+
+                if (!m) return;
+                var supports = trim(m[1]);
+
+                if (!open()) return error("@supports missing '{'");
+
+                var style = comments().concat(rules());
+
+                if (!close()) return error("@supports missing '}'");
+
+                return pos({
+                type: 'supports',
+                supports: supports,
+                rules: style
+                });
+            }
+
+            /**
+             * Parse host.
+             */
+
+            function athost() {
+                var pos = position();
+                var m = match(/^@host\s*/);
+
+                if (!m) return;
+
+                if (!open()) return error("@host missing '{'");
+
+                var style = comments().concat(rules());
+
+                if (!close()) return error("@host missing '}'");
+
+                return pos({
+                type: 'host',
+                rules: style
+                });
+            }
+
+            /**
+             * Parse media.
+             */
+
+            function atmedia() {
+                var pos = position();
+                var m = match(/^@media *([^{]+)/);
+
+                if (!m) return;
+                var media = trim(m[1]);
+
+                if (!open()) return error("@media missing '{'");
+
+                var style = comments().concat(rules());
+
+                if (!close()) return error("@media missing '}'");
+
+                return pos({
+                type: 'media',
+                media: media,
+                rules: style
+                });
+            }
+
+
+            /**
+             * Parse custom-media.
+             */
+
+            function atcustommedia() {
+                var pos = position();
+                var m = match(/^@custom-media\s+(--[^\s]+)\s*([^{;]+);/);
+                if (!m) return;
+
+                return pos({
+                type: 'custom-media',
+                name: trim(m[1]),
+                media: trim(m[2])
+                });
+            }
+
+            /**
+             * Parse paged media.
+             */
+
+            function atpage() {
+                var pos = position();
+                var m = match(/^@page */);
+                if (!m) return;
+
+                var sel = selector() || [];
+
+                if (!open()) return error("@page missing '{'");
+                var decls = comments();
+
+                // declarations
+                var decl;
+                while (decl = declaration()) {
+                decls.push(decl);
+                decls = decls.concat(comments());
+                }
+
+                if (!close()) return error("@page missing '}'");
+
+                return pos({
+                type: 'page',
+                selectors: sel,
+                declarations: decls
+                });
+            }
+
+            /**
+             * Parse document.
+             */
+
+            function atdocument() {
+                var pos = position();
+                var m = match(/^@([-\w]+)?document *([^{]+)/);
+                if (!m) return;
+
+                var vendor = trim(m[1]);
+                var doc = trim(m[2]);
+
+                if (!open()) return error("@document missing '{'");
+
+                var style = comments().concat(rules());
+
+                if (!close()) return error("@document missing '}'");
+
+                return pos({
+                type: 'document',
+                document: doc,
+                vendor: vendor,
+                rules: style
+                });
+            }
+
+            /**
+             * Parse font-face.
+             */
+
+            function atfontface() {
+                var pos = position();
+                var m = match(/^@font-face\s*/);
+                if (!m) return;
+
+                if (!open()) return error("@font-face missing '{'");
+                var decls = comments();
+
+                // declarations
+                var decl;
+                while (decl = declaration()) {
+                decls.push(decl);
+                decls = decls.concat(comments());
+                }
+
+                if (!close()) return error("@font-face missing '}'");
+
+                return pos({
+                type: 'font-face',
+                declarations: decls
+                });
+            }
+
+            /**
+             * Parse import
+             */
+
+            var atimport = _compileAtrule('import');
+
+            /**
+             * Parse charset
+             */
+
+            var atcharset = _compileAtrule('charset');
+
+            /**
+             * Parse namespace
+             */
+
+            var atnamespace = _compileAtrule('namespace');
+
+            /**
+             * Parse non-block at-rules
+             */
+
+
+            function _compileAtrule(name) {
+                var re = new RegExp('^@' + name + '\\s*([^;]+);');
+                return function() {
+                var pos = position();
+                var m = match(re);
+                if (!m) return;
+                var ret = { type: name };
+                ret[name] = m[1].trim();
+                return pos(ret);
+                }
+            }
+
+            /**
+             * Parse at rule.
+             */
+
+            function atrule() {
+                if (css[0] != '@') return;
+
+                return atkeyframes()
+                || atmedia()
+                || atcustommedia()
+                || atsupports()
+                || atimport()
+                || atcharset()
+                || atnamespace()
+                || atdocument()
+                || atpage()
+                || athost()
+                || atfontface();
+            }
+
+            /**
+             * Parse rule.
+             */
+
+            function rule() {
+                var pos = position();
+                var sel = selector();
+
+                if (!sel) return error('selector missing');
+                comments();
+
+                return pos({
+                type: 'rule',
+                selectors: sel,
+                declarations: declarations()
+                });
+            }
+
+            return addParent(stylesheet());
+        };
+
+        /**
+         * Trim `str`.
+         */
+
+        function trim(str) {
+            return str ? str.replace(/^\s+|\s+$/g, '') : '';
+        }
+
+        /**
+         * Adds non-enumerable parent node reference to each node.
+         */
+
+        function addParent(obj, parent) {
+            var isNode = obj && typeof obj.type === 'string';
+            var childParent = isNode ? obj : parent;
+
+            for (var k in obj) {
+                var value = obj[k];
+                if (Array.isArray(value)) {
+                value.forEach(function(v) { addParent(v, childParent); });
+                } else if (value && typeof value === 'object') {
+                addParent(value, childParent);
+                }
+            }
+
+            if (isNode) {
+                Object.defineProperty(obj, 'parent', {
+                configurable: true,
+                writable: true,
+                enumerable: false,
+                value: parent || null
+                });
+            }
+
+            return obj;
+        }
+
+        function beautifyCSS(ast, indent = '\t') {
+            function beautifyNode(node, depth = 0) {
+                const padding = indent.repeat(depth);
+                switch (node.type) {
+                    case 'stylesheet':
+                        return node.stylesheet.rules.map(rule => beautifyNode(rule, depth)).join('\n\n');
+                    case 'rule':
+                        return `${padding}${node.selectors.join(', ')} {\n${node.declarations.map(decl => beautifyNode(decl, depth + 1)).join('\n')}\n${padding}}`;
+                    case 'declaration':
+                        return `${padding}${node.property}: ${node.value};`;
+                    case 'comment':
+                        return `${padding}/*${node.comment}*/`;
+                    case 'keyframes':
+                        return `${padding}@keyframes ${node.name} {\n${node.keyframes.map(kf => beautifyNode(kf, depth + 1)).join('\n')}\n${padding}}`;
+                    case 'keyframe':
+                        return `${padding}${node.values.join(', ')} {\n${node.declarations.map(decl => beautifyNode(decl, depth + 1)).join('\n')}\n${padding}}`;
+                    case 'media':
+                        return `${padding}@media ${node.media} {\n${node.rules.map(rule => beautifyNode(rule, depth + 1)).join('\n')}\n${padding}}`;
+                    // Add more cases for other node types as needed
+                    default:
+                        return '';
+                }
+            }
+
+            return beautifyNode(ast);
+        }
+
+        function generateGoCode(ast) {
+            const validPseudoSelectors = ['hover', 'active', 'focus', 'visited', 'link', 'first-child', 'last-child', 'checked', 'disabled', 'enabled'];
+            let goCode = '';
+            let rawCSS = '';
+
+            function generateForNode(node, parentSelector = '') {
+                switch (node.type) {
+                    case 'stylesheet':
+                        return node.stylesheet.rules.map(rule => generateForNode(rule)).join('\n\n');
+                    case 'rule':
+                        const selector = node.selectors.join(', ');
+                        const [baseSelector, pseudoSelector] = selector.split(':');
+                        const funcName = `Style${baseSelector.replace(/[^\w]/g, '')}`;
+                        let code = `func ${funcName}(e *ui.Element) *ui.Element {\n`;
+                        let unhandledCSS = '';
+
+                        node.declarations.forEach(decl => {
+                            const result = generateForDeclaration(decl, pseudoSelector);
+                            if (result.goCode) {
+                                code += result.goCode;
+                            } else {
+                                unhandledCSS += `${decl.property}: ${decl.value};\n`;
+                            }
+                        });
+
+                        if (unhandledCSS) {
+                            const varName = `rawCSS_${baseSelector.replace(/[^\w]/g, '')}`;
+                            if (pseudoSelector && validPseudoSelectors.includes(pseudoSelector)) {
+                                rawCSS += `var ${varName}_${pseudoSelector} = \`${baseSelector}:${pseudoSelector} { ${unhandledCSS} }\`\n`;
+                            } else {
+                                rawCSS += `var ${varName} = \`${selector} { ${unhandledCSS} }\`\n`;
+                            }
+                        }
+
+                        code += `\treturn e\n}`;
+                        return code;
+                    case 'comment':
+                        return `// ${node.comment}`;
+                    default:
+                        return '';
+                }
+            }
+
+            function generateForDeclaration(decl, pseudoSelector = '') {
+                const property = propertyToGoMethod(decl.property);
+                const value = decl.value;
+
+                if (cssToGoMapping[decl.property]) {
+                    let methodChain = `doc.CSS.Container`;
+                    if (pseudoSelector && validPseudoSelectors.includes(pseudoSelector)) {
+                        methodChain += `.${capitalizeFirstLetter(pseudoSelector)}`;
+                    }
+                    methodChain += `.Style.${property}`;
+
+                    if (cssToGoMapping[decl.property].values.includes(value)) {
+                        return { goCode: `\te = ${methodChain}.${capitalizeFirstLetter(value)}(e)\n` };
+                    } else {
+                        return { goCode: `\te = ${methodChain}.Value("${value}")(e)\n` };
+                    }
+                } else {
+                    return { goCode: '' }; // This will be collected in unhandledCSS
+                }
+            }
+
+            goCode = generateForNode(ast);
+            
+            return { goCode, rawCSS };
+        }
+        
+
+
+        function propertyToGoMethod(property) {
+            return property.split('-').map(word => word.charAt(0).toUpperCase() + word.slice(1)).join('');
+        }
+
+
+    </script>
+
+
+</body>
+
+</html>

@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Zui Logo with Glow and Dynamic Blended Background</title>
+    <link href="https://db.onlinewebfonts.com/c/fabf87651926ea5dba6b34559ba25409?family=Afrobeat+W00+Normal" rel="stylesheet">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/dat-gui/0.7.7/dat.gui.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/sketch.js/1.0/sketch.min.js"></script>
+    <style>
+        body, html { margin: 0; padding: 0; overflow: hidden; }
+        #webgl-container { 
+            position: fixed; 
+            top: 0; 
+            left: 0; 
+            width: 100%; 
+            height: 100%; 
+        }
+        #logo-container {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            pointer-events: none;
+        }
+        .logo {
+            font-size: 120px;
+            text-transform: uppercase;
+            font-family: "Afrobeat W00 Normal", sans-serif;
+            font-weight: normal;
+            color: white;
+            text-align: center;
+            letter-spacing: 0.05em;
+            mix-blend-mode: difference;
+            transition: all 0.3s ease;
+            animation: neon 3s infinite;
+        }
+        @keyframes neon {
+            0%, 100% {
+                text-shadow: 
+                    0 0 5px #E6F3FF,
+                    0 0 10px #E6F3FF,
+                    0 0 20px #FFFFFF,
+                    0 0 30px #FFFFFF,
+                    0 0 40px #FFDAB9,
+                    0 0 70px #FFDAB9;
+            }
+            50% {
+                text-shadow: 
+                    0 0 7px #E6F3FF,
+                    0 0 14px #E6F3FF,
+                    0 0 25px #FFFFFF,
+                    0 0 35px #FFFFFF,
+                    0 0 45px #FFDAB9,
+                    0 0 75px #FFDAB9;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div id="webgl-container"></div>
+    <div id="logo-container">
+        <div class="logo">Zui</div>
+    </div>
+
+    <script>
+    (function() {
+        var GLSL = {
+            vert: `
+                attribute vec2 a_position;
+                void main() {
+                    gl_Position = vec4(a_position, 0, 1);
+                }
+            `,
+            frag: `
+                precision mediump float;
+                uniform vec2 u_resolution;
+                uniform float u_brightness;
+                uniform float u_blobiness;
+                uniform float u_particles;
+                uniform float u_millis;
+                uniform float u_energy;
+
+                float noise(vec2 co) {
+                    return fract(sin(dot(co.xy, vec2(12.9898, 78.233))) * 43758.5453);
+                }
+
+                void main() {
+                    vec2 position = (gl_FragCoord.xy / u_resolution.x);
+                    float t = u_millis * 0.001 * u_energy;
+                    
+                    float a = 0.0, b = 0.0, c = 0.0;
+                    vec2 pos, center = vec2(0.5, 0.5 * (u_resolution.y / u_resolution.x));
+                    
+                    float limit = u_particles / 40.0;
+                    float step = 1.0 / u_particles;
+                    
+                    for (float i = 0.0; i <= 1.0; i += 0.025) {
+                        if (i <= limit) {
+                            vec2 np = vec2(i, 1.0-i);
+                            float na = noise(np * 1.1), nb = noise(np * 2.8),
+                                  nc = noise(np * 0.7), nd = noise(np * 3.2);
+
+                            pos = center;
+                            pos.x += sin(t*na) * cos(t*nb) * tan(t*na*0.15) * 0.3;
+                            pos.y += tan(t*nc) * sin(t*nd) * 0.1;
+                            
+                            float d = pow(1.6*na / length(pos - position), u_blobiness);
+                            
+                            if (i < limit * 0.3333) a += d;
+                            else if (i < limit * 0.6666) b += d;
+                            else c += d;
+                        }
+                    }
+                    
+                    vec3 col = vec3(a*c, b*c, a*b) * 0.0001 * u_brightness;
+                    gl_FragColor = vec4(col, 1.0);
+                }
+            `
+        };
+
+        var gl = Sketch.create({
+            container: document.getElementById('webgl-container'),
+            type: Sketch.WEB_GL,
+            brightness: 0.8,
+            blobiness: 1.5,
+            particles: 40,
+            energy: 1.01
+        });
+
+        gl.setup = function() {
+            var vert = this.createShader(this.VERTEX_SHADER);
+            var frag = this.createShader(this.FRAGMENT_SHADER);
+            this.shaderSource(vert, GLSL.vert);
+            this.shaderSource(frag, GLSL.frag);
+            this.compileShader(vert);
+            this.compileShader(frag);
+            
+            this.shaderProgram = this.createProgram();
+            this.attachShader(this.shaderProgram, vert);
+            this.attachShader(this.shaderProgram, frag);
+            this.linkProgram(this.shaderProgram);
+            
+            this.useProgram(this.shaderProgram);
+
+            this.shaderProgram.attributes = {
+                position: this.getAttribLocation(this.shaderProgram, 'a_position')
+            };
+            this.shaderProgram.uniforms = {
+                resolution: this.getUniformLocation(this.shaderProgram, 'u_resolution'),
+                brightness: this.getUniformLocation(this.shaderProgram, 'u_brightness'),
+                blobiness: this.getUniformLocation(this.shaderProgram, 'u_blobiness'),
+                particles: this.getUniformLocation(this.shaderProgram, 'u_particles'),
+                energy: this.getUniformLocation(this.shaderProgram, 'u_energy'),
+                millis: this.getUniformLocation(this.shaderProgram, 'u_millis')
+            };
+
+            this.geometry = this.createBuffer();
+            this.geometry.vertexCount = 6;
+            this.bindBuffer(this.ARRAY_BUFFER, this.geometry);
+            this.bufferData(this.ARRAY_BUFFER, new Float32Array([-1.0, -1.0, 1.0, -1.0, -1.0, 1.0, -1.0, 1.0, 1.0, -1.0, 1.0, 1.0]), this.STATIC_DRAW);
+            this.enableVertexAttribArray(this.shaderProgram.attributes.position);
+            this.vertexAttribPointer(this.shaderProgram.attributes.position, 2, this.FLOAT, false, 0, 0);
+
+            this.resize();
+        };
+
+        gl.updateUniforms = function() {
+            if (!this.shaderProgram) return;
+            this.uniform2f(this.shaderProgram.uniforms.resolution, this.width, this.height);
+            this.uniform1f(this.shaderProgram.uniforms.brightness, this.brightness);
+            this.uniform1f(this.shaderProgram.uniforms.blobiness, this.blobiness);
+            this.uniform1f(this.shaderProgram.uniforms.particles, this.particles);
+            this.uniform1f(this.shaderProgram.uniforms.energy, this.energy);
+        };
+
+        gl.draw = function() {
+            this.uniform1f(this.shaderProgram.uniforms.millis, this.millis + 5000);
+            this.clear(this.COLOR_BUFFER_BIT | this.DEPTH_BUFFER_BIT);
+            this.bindBuffer(this.ARRAY_BUFFER, this.geometry);
+            this.drawArrays(this.TRIANGLES, 0, this.geometry.vertexCount);
+        };
+
+        gl.resize = function() {
+            this.viewport(0, 0, this.width, this.height);
+            this.updateUniforms();
+        };
+
+        // GUI controls
+        var gui = new dat.GUI();
+        gui.add(gl, 'particles').step(1.0).min(8).max(40).onChange(function() {
+            gl.updateUniforms();
+        });
+        gui.add(gl, 'brightness').step(0.01).min(0.1).max(1.0).onChange(function() {
+            gl.updateUniforms();
+        });
+        gui.add(gl, 'blobiness').step(0.01).min(0.8).max(1.5).onChange(function() {
+            gl.updateUniforms();
+        });
+        gui.add(gl, 'energy').step(0.01).min(0.1).max(4.0).onChange(function() {
+            gl.updateUniforms();
+        });
+
+        // Blend mode control
+        var blendModes = ['normal', 'multiply', 'screen', 'overlay', 'darken', 'lighten', 'color-dodge', 'color-burn', 'hard-light', 'soft-light', 'difference', 'exclusion', 'hue', 'saturation', 'color', 'luminosity'];
+        var blendControl = {
+            mode: 'difference'
+        };
+        gui.add(blendControl, 'mode', blendModes).onChange(function(value) {
+            var logo = document.querySelector('.logo');
+            logo.style.mixBlendMode = value;
+            
+            // Additional effects based on blend mode
+            switch(value) {
+                case 'normal':
+                    logo.style.color = 'white';
+                    updateGlowAnimation(logo, '#E6F3FF', '#FFFFFF', '#FFDAB9');
+                    break;
+                case 'multiply':
+                    logo.style.color = 'black';
+                    updateGlowAnimation(logo, '#000000', '#333333', '#666666');
+                    break;
+                case 'screen':
+                    logo.style.color = 'white';
+                    updateGlowAnimation(logo, '#FFFFFF', '#FFFF00', '#FFA500');
+                    break;
+                case 'overlay':
+                    logo.style.color = '#888';
+                    updateGlowAnimation(logo, '#CCCCCC', '#FFFFFF', '#FFDDDD');
+                    break;
+                case 'difference':
+                    logo.style.color = 'white';
+                    updateGlowAnimation(logo, '#FF00FF', '#00FFFF', '#FFFF00');
+                    break;
+                default:
+                    logo.style.color = 'white';
+                    updateGlowAnimation(logo, '#E6F3FF', '#FFFFFF', '#FFDAB9');
+            }
+        });
+
+        function updateGlowAnimation(element, color1, color2, color3) {
+            element.style.animation = 'none';
+            element.offsetHeight; // Trigger reflow
+            element.style.animation = null;
+            
+            var style = document.createElement('style');
+            style.textContent = `
+                @keyframes neon {
+                    0%, 100% {
+                        text-shadow: 
+                            0 0 5px ${color1},
+                            0 0 10px ${color1},
+                            0 0 20px ${color2},
+                            0 0 30px ${color2},
+                            0 0 40px ${color3},
+                            0 0 70px ${color3};
+                    }
+                    50% {
+                        text-shadow: 
+                            0 0 7px ${color1},
+                            0 0 14px ${color1},
+                            0 0 25px ${color2},
+                            0 0 35px ${color2},
+                            0 0 45px ${color3},
+                            0 0 75px ${color3};
+                    }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+
+        gui.close();
+    })();
+    </script>
+</body>
+</html>
